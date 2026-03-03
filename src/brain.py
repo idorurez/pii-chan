@@ -2,6 +2,8 @@
 Pii-chan's Brain - LLM integration and context building
 """
 import time
+import threading
+import re
 from dataclasses import dataclass
 from typing import Optional, List, Tuple
 from pathlib import Path
@@ -52,9 +54,11 @@ class PiiBrain:
         self.last_speech_time: float = 0
         self.last_speech_text: str = ""
         self.speech_count: int = 0
-        
-        # LLM (lazy loaded)
+
+        # LLM (lazy loaded, with lock for thread-safe access)
         self._llm = None
+        self._llm_lock = threading.Lock()
+        self._inference_lock = threading.Lock()
         
         # Memory
         self.memory: Optional[SessionMemory] = None
@@ -68,15 +72,19 @@ class PiiBrain:
         return "あなたは優しい車のAIアシスタント、ピーちゃんです。"
         
     def _get_llm(self):
-        """Lazy load the LLM."""
+        """Lazy load the LLM (thread-safe)."""
         if self._llm is None and self.model_path:
-            Llama = get_llama()
-            self._llm = Llama(
-                model_path=self.model_path,
-                n_ctx=self.context_size,
-                n_threads=4,
-                verbose=False
-            )
+            with self._llm_lock:
+                if self._llm is None:
+                    print("  Loading LLM model (first time, may take a moment)...")
+                    Llama = get_llama()
+                    self._llm = Llama(
+                        model_path=self.model_path,
+                        n_ctx=self.context_size,
+                        n_threads=4,
+                        verbose=False
+                    )
+                    print("  LLM ready!")
         return self._llm
         
     def set_memory(self, memory: SessionMemory):
@@ -209,27 +217,45 @@ class PiiBrain:
         else:
             last_speech_section = "\n\n【ピーちゃんの最後の発言】\n- まだ何も話していない"
             
-        # Instruction
-        instruction = """
-
----
-上記の状況を踏まえて、自然に話してください。
-話すことがなければ「...」とだけ返してください。
-返答は日本語で、短く（1-2文）、カジュアルに。"""
-
-        # Combine all sections
-        context = (
-            self.personality + 
-            "\n\n---\n\n" +
-            current_state + 
-            events_section + 
+        # Combine situation sections
+        situation = (
+            current_state +
+            events_section +
             history_section +
-            last_speech_section +
-            instruction
+            last_speech_section
         )
+
+        return situation
         
-        return context
-        
+    def _generate(self, situation: str) -> str:
+        """Send a chat completion request to the LLM and return cleaned text."""
+        llm = self._get_llm()
+
+        messages = [
+            {"role": "system", "content": self.personality},
+            {"role": "user", "content": situation
+             + "\n\n上の状況を見て、ピーちゃんとして一言話してください。"
+               "話すことがなければ「...」とだけ返してください。"
+               "返答はピーちゃんのセリフだけ。短く（1〜2文）、カジュアルに。"},
+        ]
+
+        with self._inference_lock:
+            response = llm.create_chat_completion(
+                messages=messages,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                stop=["---", "【"],
+            )
+
+        text = response['choices'][0]['message']['content'].strip()
+        # Clean common LLM artifacts
+        text = re.sub(r'\(?\d{1,2}:\d{2}\)?', '', text)  # timestamps
+        text = re.sub(r'^\[.*?\][:：]?\s*', '', text)     # [返答]: etc
+        text = re.sub(r'^ピーちゃん[:：]\s*', '', text)    # "ピーちゃん:" prefix
+        text = re.sub(r'^「|」$', '', text)                # stray brackets
+        text = text.strip()
+        return text
+
     def think(self, state: CarState, cooldown: float = 30.0) -> Optional[str]:
         """
         Think about whether to say something.
@@ -238,35 +264,26 @@ class PiiBrain:
         # Check cooldown
         if time.time() - self.last_speech_time < cooldown:
             return None
-            
+
         # Build context
-        context = self.build_context(state)
-        
+        situation = self.build_context(state)
+
         # Get LLM response
         llm = self._get_llm()
         if llm is None:
-            # No model loaded - use simple rule-based fallback
             return self._rule_based_response(state)
-            
-        # Generate response
-        response = llm(
-            context,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            stop=["---", "\n\n", "【"],
-        )
-        
-        text = response['choices'][0]['text'].strip()
-        
+
+        text = self._generate(situation)
+
         # Check if model chose to stay silent
-        if text == "..." or text == "" or len(text) < 2:
+        if text in ("...", "") or len(text) < 2:
             return None
-            
+
         # Record speech
         self.last_speech_time = time.time()
         self.last_speech_text = text
         self.speech_count += 1
-        
+
         return text
         
     def _rule_based_response(self, state: CarState) -> Optional[str]:
@@ -313,23 +330,16 @@ class PiiBrain:
         
     def force_response(self, state: CarState) -> str:
         """Force a response, ignoring cooldown. For testing."""
-        context = self.build_context(state)
-        
         llm = self._get_llm()
         if llm is None:
             return "ピピッ！テストモードだよ〜"
-            
-        response = llm(
-            context,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            stop=["---", "\n\n", "【"],
-        )
-        
-        text = response['choices'][0]['text'].strip()
-        if text == "..." or text == "":
+
+        situation = self.build_context(state)
+        text = self._generate(situation)
+
+        if text in ("...", "") or len(text) < 2:
             text = "ん〜、特に言うことないかな..."
-            
+
         self.last_speech_time = time.time()
         self.last_speech_text = text
         return text
