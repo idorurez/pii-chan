@@ -130,6 +130,13 @@ def print_state(state: CarState):
     print()
 
 
+def _speak(voice, brain, memory, text):
+    """Speak and log."""
+    voice.speak(text)
+    if brain.current_session:
+        memory.log_speech(text, brain.current_session.session_id)
+
+
 def think_loop(brain, can, voice, memory, config):
     """Background thread that runs Pii-chan's think cycle."""
     global running
@@ -138,17 +145,23 @@ def think_loop(brain, can, voice, memory, config):
 
     while running:
         now = time.time()
-        if now - last_think >= think_interval:
+
+        # Check for event-driven responses frequently (every tick)
+        event_response = brain.react_to_event(can.state)
+        if event_response:
+            _speak(voice, brain, memory, event_response)
+
+        # Idle chatter on longer interval
+        elif now - last_think >= think_interval:
             response = brain.think(
                 can.state,
                 cooldown=config.brain.speech_cooldown
             )
             if response:
-                voice.speak(response)
-                if brain.current_session:
-                    memory.log_speech(response, brain.current_session.session_id)
+                _speak(voice, brain, memory, response)
             last_think = now
-        time.sleep(0.1)
+
+        time.sleep(0.5)
 
 
 def run_text_mode(args, config):

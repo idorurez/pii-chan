@@ -54,12 +54,18 @@ class PiiBrain:
         self.last_speech_time: float = 0
         self.last_speech_text: str = ""
         self.speech_count: int = 0
+        self._recent_speeches: List[str] = []  # last N speeches for anti-repeat
 
         # LLM (lazy loaded, with lock for thread-safe access)
         self._llm = None
         self._llm_lock = threading.Lock()
         self._inference_lock = threading.Lock()
-        
+
+        # Event-driven speech
+        self._pending_events: list = []
+        self._event_batch_deadline: float = 0  # when to process batched events
+        self._event_batch_window: float = 1.0  # wait this long to batch rapid events
+
         # Memory
         self.memory: Optional[SessionMemory] = None
         self.current_session: Optional[DrivingSession] = None
@@ -123,6 +129,16 @@ class PiiBrain:
                 {"description": description}
             )
             
+    # Events that should trigger an immediate response
+    REACTIVE_EVENTS = {
+        "engine_start", "engine_stop",
+        "gear_change_reverse", "gear_change_park", "gear_change_drive",
+        "door_opened", "door_closed",
+        "hard_brake", "high_speed", "fuel_low",
+        "start_moving", "stopped",
+        "bsm_left", "bsm_right",
+    }
+
     def on_can_event(self, state: CarState, event_name: str):
         """Handle CAN event callback."""
         # Create human-readable description
@@ -145,6 +161,13 @@ class PiiBrain:
         }
         desc = descriptions.get(event_name, event_name)
         self.add_event(event_name, desc)
+
+        # Queue reactive events — batch rapid events together
+        if event_name in self.REACTIVE_EVENTS:
+            if not self._pending_events:
+                # First event: set a deadline to batch
+                self._event_batch_deadline = time.time() + self._event_batch_window
+            self._pending_events.append(event_name)
         
     def build_context(self, state: CarState) -> str:
         """Build the context prompt for the LLM."""
@@ -210,50 +233,158 @@ class PiiBrain:
                 if history_items:
                     history_section = f"\n\n【最近の運転履歴】\n" + "\n".join(history_items)
                     
-        # Last speech info
-        if self.last_speech_time > 0:
-            seconds_ago = time.time() - self.last_speech_time
-            last_speech_section = f"\n\n【ピーちゃんの最後の発言】\n- {seconds_ago:.0f}秒前: 「{self.last_speech_text}」"
-        else:
-            last_speech_section = "\n\n【ピーちゃんの最後の発言】\n- まだ何も話していない"
-            
+        # Last speech info — include recent speeches to avoid repeats
+        speech_section = ""
+        if self._recent_speeches:
+            speech_lines = "\n".join(
+                f"- 「{s}」" for s in self._recent_speeches[-5:]
+            )
+            speech_section = f"\n\n【ピーちゃんが最近言ったこと（繰り返さないで！）】\n{speech_lines}"
+
         # Combine situation sections
         situation = (
             current_state +
             events_section +
             history_section +
-            last_speech_section
+            speech_section
         )
 
         return situation
         
-    def _generate(self, situation: str) -> str:
+    def _generate(self, situation: str, event_hint: Optional[str] = None) -> str:
         """Send a chat completion request to the LLM and return cleaned text."""
         llm = self._get_llm()
 
-        messages = [
-            {"role": "system", "content": self.personality},
-            {"role": "user", "content": situation
-             + "\n\n上の状況を見て、ピーちゃんとして一言話してください。"
-               "話すことがなければ「...」とだけ返してください。"
-               "返答はピーちゃんのセリフだけ。短く（1〜2文）、カジュアルに。"},
-        ]
-
-        with self._inference_lock:
-            response = llm.create_chat_completion(
-                messages=messages,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                stop=["---", "【"],
+        if event_hint:
+            prompt = (
+                f"【たった今起きたこと】\n- {event_hint}\n\n"
+                + situation
+                + "\n\n上の出来事に対してピーちゃんとして一言リアクションしてください。"
+                  "返答はセリフだけ。短く（1文）、カジュアルに。"
+            )
+        else:
+            prompt = (
+                situation
+                + "\n\n上の状況を見て、ピーちゃんとして一言話してください。"
+                  "話すことがなければ「...」とだけ返してください。"
+                  "返答はセリフだけ。短く（1文）、カジュアルに。"
             )
 
-        text = response['choices'][0]['message']['content'].strip()
-        # Clean common LLM artifacts
+        # Build system prompt with anti-repeat constraint
+        system = self.personality
+        if self._recent_speeches:
+            forbidden = "、".join(f"「{s}」" for s in self._recent_speeches[-5:])
+            system += f"\n\n【重要】以下のセリフは既に使ったので絶対に使わないで。似た表現もダメ：\n{forbidden}"
+
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+
+        # Try up to 3 times to get a non-repeated response
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            with self._inference_lock:
+                response = llm.create_chat_completion(
+                    messages=messages,
+                    max_tokens=self.max_tokens,
+                    temperature=min(1.2, self.temperature + (attempt * 0.15)),
+                    stop=["---", "【"],
+                )
+
+            text = response['choices'][0]['message']['content'].strip()
+            text = self._clean_response(text)
+
+            # Check if it's a repeat (normalize punctuation for comparison)
+            normalized = re.sub(r'[。、♪〜！？!?…]+$', '', text)
+            recent_normalized = [
+                re.sub(r'[。、♪〜！？!?…]+$', '', s) for s in self._recent_speeches
+            ]
+            if text and normalized not in recent_normalized:
+                return text
+
+        # All attempts repeated — return last attempt anyway
+        return text
+
+    @staticmethod
+    def _clean_response(text: str) -> str:
+        """Clean common LLM artifacts from response text."""
         text = re.sub(r'\(?\d{1,2}:\d{2}\)?', '', text)  # timestamps
         text = re.sub(r'^\[.*?\][:：]?\s*', '', text)     # [返答]: etc
         text = re.sub(r'^ピーちゃん[:：]\s*', '', text)    # "ピーちゃん:" prefix
         text = re.sub(r'^「|」$', '', text)                # stray brackets
-        text = text.strip()
+        return text.strip()
+
+    def _record_speech(self, text: str):
+        """Record a speech for tracking."""
+        self.last_speech_time = time.time()
+        self.last_speech_text = text
+        self.speech_count += 1
+        self._recent_speeches.append(text)
+        if len(self._recent_speeches) > 10:
+            self._recent_speeches.pop(0)
+
+    # Priority order — higher priority events win when batched
+    EVENT_PRIORITY = {
+        "hard_brake": 10,
+        "bsm_left": 9, "bsm_right": 9,
+        "fuel_low": 8,
+        "high_speed": 7,
+        "gear_change_reverse": 6,
+        "engine_start": 5, "engine_stop": 5,
+        "door_opened": 4,
+        "gear_change_drive": 3, "gear_change_park": 3,
+        "start_moving": 2, "stopped": 2,
+        "door_closed": 1,
+    }
+
+    # Event descriptions for LLM hint
+    EVENT_DESCRIPTIONS = {
+        "engine_start": "エンジンがかかった",
+        "engine_stop": "エンジンが止まった",
+        "gear_change_park": "パーキングに入れた",
+        "gear_change_reverse": "バックギアに入れた",
+        "gear_change_drive": "ドライブに入れた",
+        "gear_change_neutral": "ニュートラルに入れた",
+        "start_moving": "走り始めた",
+        "stopped": "停車した",
+        "high_speed": "時速100km超えた",
+        "door_opened": "ドアが開いた",
+        "door_closed": "ドアが閉まった",
+        "hard_brake": "急ブレーキをかけた",
+        "bsm_left": "左の死角に車がいる",
+        "bsm_right": "右の死角に車がいる",
+        "fuel_low": "燃料が少なくなった",
+    }
+
+    def react_to_event(self, state: CarState) -> Optional[str]:
+        """React to pending events after batch window expires."""
+        if not self._pending_events:
+            return None
+
+        # Wait for batch window to close (more events might come)
+        now = time.time()
+        if now < self._event_batch_deadline:
+            return None
+
+        # Pick highest-priority event from the batch
+        events = self._pending_events[:]
+        self._pending_events.clear()
+
+        best = max(events, key=lambda e: self.EVENT_PRIORITY.get(e, 0))
+
+        llm = self._get_llm()
+        if llm is None:
+            return self._rule_based_response_for(best)
+
+        situation = self.build_context(state)
+        event_hint = self.EVENT_DESCRIPTIONS.get(best, best)
+        text = self._generate(situation, event_hint=event_hint)
+
+        if text in ("...", "") or len(text) < 2:
+            return None
+
+        self._record_speech(text)
         return text
 
     def think(self, state: CarState, cooldown: float = 30.0) -> Optional[str]:
@@ -261,7 +392,7 @@ class PiiBrain:
         Think about whether to say something.
         Returns the response text, or None if staying silent.
         """
-        # Check cooldown
+        # Idle chatter — longer cooldown
         if time.time() - self.last_speech_time < cooldown:
             return None
 
@@ -279,54 +410,85 @@ class PiiBrain:
         if text in ("...", "") or len(text) < 2:
             return None
 
-        # Record speech
-        self.last_speech_time = time.time()
-        self.last_speech_text = text
-        self.speech_count += 1
+        self._record_speech(text)
 
         return text
         
-    def _rule_based_response(self, state: CarState) -> Optional[str]:
-        """Simple rule-based fallback when no LLM is available."""
-        # Only respond to significant events
-        if not self.recent_events:
-            return None
-            
-        latest = self.recent_events[-1]
-        
-        # Only respond if event is recent (last 5 seconds)
-        if time.time() - latest.timestamp > 5:
-            return None
-            
-        responses = {
-            "engine_start": [
-                "おはよう！今日もよろしくね♪",
-                "ピピッ！エンジンかかったね！",
-                "やった、出発だね！",
-            ],
-            "gear_change_reverse": [
-                "バックするの？後ろ気をつけてね〜",
-                "後ろ、ちゃんと見てね！",
-            ],
-            "hard_brake": [
-                "わわっ！大丈夫？",
-                "びっくりした...！",
-            ],
-            "fuel_low": [
-                "あ、ガソリン少なくなってきたよ〜",
-                "そろそろ給油した方がいいかも？",
-            ],
-        }
-        
+    RULE_BASED_RESPONSES = {
+        "engine_start": [
+            "おはよう！今日もよろしくね♪",
+            "ピピッ！エンジンかかったね！",
+            "やった、出発だね！",
+        ],
+        "engine_stop": [
+            "お疲れさま〜！",
+            "到着かな？お疲れさま！",
+        ],
+        "gear_change_reverse": [
+            "バックするの？後ろ気をつけてね〜",
+            "後ろ、ちゃんと見てね！",
+        ],
+        "gear_change_drive": [
+            "出発だね！",
+            "行こう行こう〜！",
+        ],
+        "gear_change_park": [
+            "パーキングだね",
+            "停まるのかな？",
+        ],
+        "start_moving": [
+            "動き出したね〜",
+            "しゅっぱーつ！",
+        ],
+        "stopped": [
+            "止まったね",
+        ],
+        "high_speed": [
+            "ちょっと速いかも...？",
+            "スピード出てるよ〜気をつけてね",
+        ],
+        "door_opened": [
+            "ドア開いてるよ〜",
+            "あ、ドア開いた！",
+        ],
+        "door_closed": [
+            "ドア閉まったね、OK！",
+        ],
+        "hard_brake": [
+            "わわっ！大丈夫？",
+            "びっくりした...！",
+        ],
+        "fuel_low": [
+            "あ、ガソリン少なくなってきたよ〜",
+            "そろそろ給油した方がいいかも？",
+        ],
+        "bsm_left": [
+            "左に車いるよ！気をつけて！",
+        ],
+        "bsm_right": [
+            "右に車いるよ！気をつけて！",
+        ],
+    }
+
+    def _rule_based_response_for(self, event_type: str) -> Optional[str]:
+        """Get a rule-based response for a specific event."""
         import random
-        options = responses.get(latest.event_type)
+        options = self.RULE_BASED_RESPONSES.get(event_type)
         if options:
             text = random.choice(options)
             self.last_speech_time = time.time()
             self.last_speech_text = text
             return text
-            
         return None
+
+    def _rule_based_response(self, state: CarState) -> Optional[str]:
+        """Rule-based fallback for idle think (no specific event)."""
+        if not self.recent_events:
+            return None
+        latest = self.recent_events[-1]
+        if time.time() - latest.timestamp > 10:
+            return None
+        return self._rule_based_response_for(latest.event_type)
         
     def force_response(self, state: CarState) -> str:
         """Force a response, ignoring cooldown. For testing."""
@@ -340,6 +502,5 @@ class PiiBrain:
         if text in ("...", "") or len(text) < 2:
             text = "ん〜、特に言うことないかな..."
 
-        self.last_speech_time = time.time()
-        self.last_speech_text = text
+        self._record_speech(text)
         return text

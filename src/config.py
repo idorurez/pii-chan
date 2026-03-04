@@ -11,12 +11,12 @@ class LLMConfig:
     model_path: str = "./models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
     context_size: int = 8192
     max_tokens: int = 100
-    temperature: float = 0.8
+    temperature: float = 0.9
     top_p: float = 0.9
     
 @dataclass
 class VoiceConfig:
-    engine: str = "mock"  # "voicevox" or "mock"
+    engine: str = "voicevox"  # "voicevox" or "mock"
     voicevox_url: str = "http://localhost:50021"
     speaker_id: int = 1  # VOICEVOX character ID
     speed: float = 1.1
