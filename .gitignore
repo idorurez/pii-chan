@@ -12,6 +12,9 @@ ENV/
 models/
 *.gguf
 
+# VOICEVOX engine (too large for git)
+voicevox/
+
 # Database
 data/sessions.db
 
