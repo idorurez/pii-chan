@@ -56,6 +56,9 @@ class PiiBrain:
         self.speech_count: int = 0
         self._recent_speeches: List[str] = []  # last N speeches for anti-repeat
 
+        # Conversation history for chat mode
+        self._chat_history: List[dict] = []
+
         # LLM (lazy loaded, with lock for thread-safe access)
         self._llm = None
         self._llm_lock = threading.Lock()
@@ -64,7 +67,10 @@ class PiiBrain:
         # Event-driven speech
         self._pending_events: list = []
         self._event_batch_deadline: float = 0  # when to process batched events
-        self._event_batch_window: float = 1.0  # wait this long to batch rapid events
+        self._event_batch_window: float = 0.3  # wait this long to batch rapid events
+
+        # Idle chatter control
+        self.idle_chatter: bool = True  # False = only respond to events, no unprompted speech
 
         # Memory
         self.memory: Optional[SessionMemory] = None
@@ -289,6 +295,7 @@ class PiiBrain:
                     messages=messages,
                     max_tokens=self.max_tokens,
                     temperature=min(1.2, self.temperature + (attempt * 0.15)),
+                    repeat_penalty=1.3,
                     stop=["---", "【"],
                 )
 
@@ -313,6 +320,8 @@ class PiiBrain:
         text = re.sub(r'^\[.*?\][:：]?\s*', '', text)     # [返答]: etc
         text = re.sub(r'^ピーちゃん[:：]\s*', '', text)    # "ピーちゃん:" prefix
         text = re.sub(r'^「|」$', '', text)                # stray brackets
+        # Kill degenerate repetition (same char 5+ times)
+        text = re.sub(r'(.)\1{4,}', r'\1\1', text)
         return text.strip()
 
     def _record_speech(self, text: str):
@@ -392,6 +401,10 @@ class PiiBrain:
         Think about whether to say something.
         Returns the response text, or None if staying silent.
         """
+        # Idle chatter disabled
+        if not self.idle_chatter:
+            return None
+
         # Idle chatter — longer cooldown
         if time.time() - self.last_speech_time < cooldown:
             return None
@@ -501,6 +514,56 @@ class PiiBrain:
 
         if text in ("...", "") or len(text) < 2:
             text = "ん〜、特に言うことないかな..."
+
+        self._record_speech(text)
+        return text
+
+    def chat(self, user_message: str, state: CarState) -> str:
+        """Have a conversation with the driver."""
+        llm = self._get_llm()
+        if llm is None:
+            return "ピピッ！ごめんね、今はお話モードじゃないの〜"
+
+        situation = self.build_context(state)
+
+        # Build messages with conversation history
+        messages = [
+            {"role": "system", "content": self.personality
+             + "\n\nドライバーが話しかけてきました。車の状況を踏まえて、"
+               "ピーちゃんとして自然に会話してください。"
+               "返答は短く（1〜3文）、カジュアルに。\n\n" + situation},
+        ]
+
+        # Add recent conversation history (last 6 turns)
+        for msg in self._chat_history[-6:]:
+            messages.append(msg)
+
+        # Add current user message
+        messages.append({"role": "user", "content": user_message})
+
+        with self._inference_lock:
+            response = llm.create_chat_completion(
+                messages=messages,
+                max_tokens=60,
+                temperature=self.temperature,
+                repeat_penalty=1.3,
+                stop=["---", "【", "\n\n"],
+            )
+
+        text = response['choices'][0]['message']['content'].strip()
+        # Take only the first line if multi-line
+        text = text.split('\n')[0].strip()
+        text = self._clean_response(text)
+
+        if not text or len(text) < 2:
+            text = "ん？なんだろ〜"
+
+        # Save to conversation history
+        self._chat_history.append({"role": "user", "content": user_message})
+        self._chat_history.append({"role": "assistant", "content": text})
+        # Keep history bounded
+        if len(self._chat_history) > 20:
+            self._chat_history = self._chat_history[-12:]
 
         self._record_speech(text)
         return text

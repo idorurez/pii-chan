@@ -108,9 +108,12 @@ def print_help():
     print("  brake hard      - Hard brake")
     print("  door            - Toggle driver door open/close")
     print("  talk            - Force Pii-chan to speak")
+    print("  shush           - Toggle idle chatter on/off")
     print("  state           - Show current car state")
     print("  help            - Show this help")
     print("  quit / exit     - Exit")
+    print()
+    print("Or just type anything else to talk to Pii-chan!")
     print()
 
 
@@ -131,8 +134,8 @@ def print_state(state: CarState):
 
 
 def _speak(voice, brain, memory, text):
-    """Speak and log."""
-    voice.speak(text)
+    """Speak and log (non-blocking)."""
+    voice.speak(text, blocking=False)
     if brain.current_session:
         memory.log_speech(text, brain.current_session.session_id)
 
@@ -161,7 +164,7 @@ def think_loop(brain, can, voice, memory, config):
                 _speak(voice, brain, memory, response)
             last_think = now
 
-        time.sleep(0.5)
+        time.sleep(0.2)
 
 
 def run_text_mode(args, config):
@@ -256,11 +259,20 @@ def run_text_mode(args, config):
                 response = brain.force_response(can.state)
                 voice.speak(response)
 
+            elif verb == "shush":
+                brain.idle_chatter = not brain.idle_chatter
+                if brain.idle_chatter:
+                    print("  Idle chatter ON (Pii-chan will talk unprompted)")
+                else:
+                    print("  Idle chatter OFF (events only)")
+
             elif verb == "state":
                 print_state(can.state)
 
             else:
-                print(f"  Unknown command: {verb} (type 'help' for commands)")
+                # Not a command — talk to Pii-chan
+                response = brain.chat(cmd, can.state)
+                voice.speak(response)
 
     finally:
         running = False
