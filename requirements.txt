@@ -11,6 +11,11 @@ requests>=2.28.0
 sounddevice>=0.4.6
 numpy>=1.24.0
 
+# Voice Input (STT) - Optional
+# vosk>=0.3.45           # Offline STT, ~50MB model
+# pvporcupine>=3.0.0     # Wake word detection (requires API key)
+# openwakeword>=0.5.0    # Open source wake word alternative
+
 # Display
 pygame>=2.5.0
 

@@ -108,12 +108,13 @@ def print_help():
     print("  brake hard      - Hard brake")
     print("  door            - Toggle driver door open/close")
     print("  talk            - Force Pii-chan to speak")
+    print("  voice           - Talk to Pii-chan with your voice (push-to-talk)")
     print("  shush           - Toggle idle chatter on/off")
     print("  state           - Show current car state")
     print("  help            - Show this help")
     print("  quit / exit     - Exit")
     print()
-    print("Or just type anything else to talk to Pii-chan!")
+    print("Or just type anything else to chat with Pii-chan!")
     print()
 
 
@@ -258,6 +259,24 @@ def run_text_mode(args, config):
             elif verb == "talk":
                 response = brain.force_response(can.state)
                 voice.speak(response)
+
+            elif verb == "voice":
+                # Push-to-talk voice input
+                try:
+                    from .voice_input import VoiceInput
+                    vi = VoiceInput()
+                    text = vi.listen()
+                    if text:
+                        response = brain.chat(text, can.state)
+                        voice.speak(response)
+                    else:
+                        print("  (Didn't catch that)")
+                except ImportError as e:
+                    print(f"  Voice input not available: {e}")
+                    print("  Run: pip install vosk sounddevice numpy")
+                    print("  See docs/VOICE_INPUT.md for setup")
+                except FileNotFoundError as e:
+                    print(f"  {e}")
 
             elif verb == "shush":
                 brain.idle_chatter = not brain.idle_chatter

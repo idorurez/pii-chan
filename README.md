@@ -18,6 +18,7 @@ Pii-chan is an AI spirit that lives in your car. She reads CAN bus data to under
 - 🔊 **Japanese TTS** — VOICEVOX for cute, natural Japanese voice
 - 😊 **Personality** — Kind, helpful, slightly clumsy AI spirit who loves her "home"
 - 🌡️ **Climate control** — (Coming soon) Voice-activated HVAC control
+- 🎤 **Voice input** — Talk to Pii-chan with push-to-talk or wake word
 
 ## Quick Start
 
@@ -237,6 +238,7 @@ pytest tests/ -v
 - [docs/MODEL_SETUP.md](docs/MODEL_SETUP.md) — LLM model download & setup
 - [docs/VOICEVOX_SETUP.md](docs/VOICEVOX_SETUP.md) — Japanese TTS setup
 - [docs/CAN_SNIFFING_GUIDE.md](docs/CAN_SNIFFING_GUIDE.md) — Reverse engineering HVAC CAN messages
+- [docs/VOICE_INPUT.md](docs/VOICE_INPUT.md) — Voice input setup (STT, wake word)
 
 ## Contributing
 
