@@ -1,26 +1,78 @@
 # 🐣 ピーちゃん (Pii-chan)
 
-An AI car companion that lives in your vehicle, understands your driving, and provides natural Japanese commentary.
+**Your AI copilot in the car — not a toy, an actual assistant.**
 
-> *"後ろ、気をつけてね〜"* — Pii-chan, when you shift into reverse
+Pii-chan is an OpenClaw node that lives in your vehicle. Full Claude intelligence, voice control, CAN bus integration. It's not a novelty chatbot with canned responses — it's your actual AI assistant, just in your car.
 
-## What is this?
+> "Set rear climate to feet only" → *does it*  
+> "What's my first meeting today?" → *checks calendar*  
+> "Read my unread messages" → *reads them aloud*  
+> "Remind me to get gas on the way home" → *sets reminder*
 
-Pii-chan is an AI spirit that lives in your car. She reads CAN bus data to understand what's happening — speed, gear, doors, engine state — and comments naturally in Japanese. She's not a soundboard with canned responses; she actually thinks about the context and decides when and what to say.
+**Target vehicle:** 2025 Toyota Sienna (adaptable to others)
 
-**Target vehicle:** 2025 Toyota Sienna (but adaptable to other CAN-equipped cars)
+## Why This Exists
 
-## Features
+Most "car AI" projects are demos. Talk to a local LLM, get dumb responses, novelty wears off in a week.
 
-- 🚗 **Real-time CAN monitoring** — Speed, RPM, gear, doors, hybrid battery, and more
-- 🧠 **LLM-powered responses** — Natural, context-aware Japanese speech (not scripted)
-- 💾 **Session memory** — Remembers past drives and references them naturally
-- 🔊 **Japanese TTS** — VOICEVOX for cute, natural Japanese voice
-- 😊 **Personality** — Kind, helpful, slightly clumsy AI spirit who loves her "home"
-- 🌡️ **Climate control** — (Coming soon) Voice-activated HVAC control
-- 🎤 **Voice input** — Talk to Pii-chan with push-to-talk or wake word
+Pii-chan is different:
+- **Full Claude access** via OpenClaw — not a 1.5B model pretending to understand
+- **All OpenClaw capabilities** — calendar, messages, reminders, web search, memory
+- **CAN bus as a skill** — climate control is a bonus feature, not the whole product
+- **Actually useful daily** — you'd miss it if it was gone
 
-## Quick Start
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Your Car                            │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Raspberry Pi 5 (OpenClaw Node)           │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌───────────────┐  │  │
+│  │  │ Voice In    │  │ Voice Out   │  │ CAN Interface │  │  │
+│  │  │ (Whisper)   │  │ (TTS)       │  │ (Read/Write)  │  │  │
+│  │  └──────┬──────┘  └──────▲──────┘  └───────┬───────┘  │  │
+│  │         │                │                  │          │  │
+│  │         └────────────────┼──────────────────┘          │  │
+│  │                          │                              │  │
+│  │              ┌───────────┴───────────┐                 │  │
+│  │              │   OpenClaw Gateway    │                 │  │
+│  │              │   (local daemon)      │                 │  │
+│  │              └───────────┬───────────┘                 │  │
+│  └──────────────────────────┼────────────────────────────┘  │
+└─────────────────────────────┼───────────────────────────────┘
+                              │ Phone tether / Car WiFi
+                              ▼
+                    ┌───────────────────┐
+                    │   Claude (API)    │
+                    │   Full LLM power  │
+                    └───────────────────┘
+```
+
+**Key insight:** The Pi is just the interface layer. All the smarts come from Claude via OpenClaw. CAN bus reading/writing is exposed as tools that Claude can use.
+
+## What Pii-chan Can Do
+
+### 🚗 Car Stuff (CAN Bus)
+- Read vehicle state (speed, gear, doors, battery, etc.)
+- Voice-controlled climate ("I'm cold" → adjusts HVAC)
+- Event awareness (engine start, hard brake, fuel low)
+- Trip context for relevant suggestions
+
+### 📅 Assistant Stuff (OpenClaw)
+- Calendar queries and reminders
+- Read/send messages
+- Weather and traffic
+- Web search
+- Todo lists
+- Anything OpenClaw can do
+
+### 🎤 Voice Control
+- Wake word or push-to-talk
+- Natural conversation while driving
+- Hands-free everything
+
+## Quick Start (Development)
 
 ### 1. Clone and Setup
 
@@ -31,225 +83,122 @@ cd pii-chan
 source venv/bin/activate
 ```
 
-### 2. Test Without Model (Rule-Based Mode)
+### 2. Run in Simulation Mode
 
 ```bash
-# Text-based testing (no pygame required)
-python -m src.main --simulate --no-model
-```
+# Text-based testing
+python -m src.main --simulate
 
-Commands in text mode:
-- `engine` — Toggle engine on/off
-- `gear p/r/n/d` — Change gear
-- `speed 50` — Set speed
-- `door` — Toggle door
-- `talk` — Force Pii-chan to speak
-- `state` — Show current car state
-- `quit` — Exit
-
-### 3. Run the Visual Simulator
-
-```bash
-# Requires pygame
-pip install pygame
+# Visual simulator (requires pygame)
 python -m src.main --simulator
 ```
 
-Simulator controls:
-- `SPACE` — Engine on/off
-- `P/R/N/D` — Gear selection
-- `↑/↓` — Accelerate/brake
-- `O` — Open/close door
-- `F` — Force Pii-chan to speak
-- `ESC` — Quit
+### 3. Connect to OpenClaw
 
-### 4. Add LLM for Natural Responses
+(Coming soon — node registration flow)
 
-```bash
-# Download Qwen 2.5 1.5B (~1GB)
-mkdir -p models
-wget -O models/qwen2.5-1.5b-instruct-q4_k_m.gguf \
-  "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+## Hardware (~$200)
 
-# Run with LLM
-python -m src.main --simulate
-```
+| Component | Purpose | Price |
+|-----------|---------|-------|
+| Raspberry Pi 5 8GB | Compute | ~$80 |
+| Waveshare 2-CH CAN HAT | CAN bus interface | ~$25 |
+| HyperPixel 4.0 | Display (optional) | ~$55 |
+| MAX98357A + Speaker | Audio output | ~$11 |
+| USB Mic | Voice input | ~$15 |
+| 12V→5V Converter | Power | ~$10 |
+| **Total** | | **~$200** |
 
-See [docs/MODEL_SETUP.md](docs/MODEL_SETUP.md) for more model options.
-
-### 5. Add Voice Output
-
-Install and run [VOICEVOX](https://voicevox.hiroshiba.jp/), then update `config.yaml`:
-
-```yaml
-voice:
-  engine: voicevox
-  speaker_id: 3  # ずんだもん
-```
-
-See [docs/VOICEVOX_SETUP.md](docs/VOICEVOX_SETUP.md) for setup guide.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                      Pii-chan                       │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │  CAN Bus    │  │  History    │  │ Personality │ │
-│  │  (live)     │  │  (SQLite)   │  │  (prompt)   │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘ │
-│         └────────────────┼────────────────┘        │
-│                          ▼                         │
-│              ┌───────────────────┐                 │
-│              │   Context Builder │                 │
-│              └─────────┬─────────┘                 │
-│                        ▼                           │
-│              ┌───────────────────┐                 │
-│              │   LLM (Qwen 1.5B) │                 │
-│              │  "What should I   │                 │
-│              │   say right now?" │                 │
-│              └─────────┬─────────┘                 │
-│                        ▼                           │
-│         ┌──────────────┴──────────────┐            │
-│         ▼                             ▼            │
-│  ┌─────────────┐               ┌─────────────┐    │
-│  │  VOICEVOX   │               │   Display   │    │
-│  │  (speech)   │               │   (face)    │    │
-│  └─────────────┘               └─────────────┘    │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-**Key insight:** Pii-chan doesn't have scripted responses. Every few seconds, she looks at:
-- Current car state (speed, gear, engine, etc.)
-- Recent events (what just happened)
-- Session history (past drives)
-- Her personality definition
-
-And asks the LLM: *"Given all this context, should I say something? If so, what?"*
+Plus CAN adapter for sniffing: WiCAN OBD ~$50
 
 ## Project Structure
 
 ```
 pii-chan/
 ├── src/
-│   ├── main.py          # Entry point
-│   ├── simulator.py     # Interactive driving simulator
-│   ├── brain.py         # LLM integration + context building
-│   ├── can_reader.py    # CAN bus interface (real + mock)
-│   ├── voice.py         # VOICEVOX TTS wrapper
-│   ├── memory.py        # Session history (SQLite)
-│   └── config.py        # Configuration management
+│   ├── main.py              # Entry point
+│   ├── node.py              # OpenClaw node integration
+│   ├── can_interface.py     # CAN read/write (exposed as tools)
+│   ├── voice_io.py          # STT + TTS
+│   └── config.py            # Configuration
+├── skills/
+│   └── can-control/         # CAN bus skill for OpenClaw
+│       ├── SKILL.md
+│       ├── can_reader.py
+│       └── can_writer.py
 ├── data/
 │   ├── toyota_sienna.dbc    # CAN message definitions
-│   ├── personality.md       # Pii-chan's personality prompt
-│   └── sessions.db          # History database (auto-created)
+│   └── personality.md       # Pii-chan's voice/style
 ├── docs/
-│   ├── MODEL_SETUP.md       # LLM installation guide
-│   └── VOICEVOX_SETUP.md    # Voice setup guide
-├── tests/
-│   └── test_brain.py
-├── config.example.yaml
-├── requirements.txt
-├── setup.sh
-└── README.md
+│   ├── CAN_SNIFFING_GUIDE.md
+│   ├── NODE_SETUP.md
+│   └── HARDWARE.md
+└── config.yaml
 ```
 
-## Configuration
+## CAN Bus Integration
 
-Copy `config.example.yaml` to `config.yaml`:
+CAN reading/writing is exposed as OpenClaw tools:
 
 ```yaml
-llm:
-  model_path: ./models/qwen2.5-1.5b-instruct-q4_k_m.gguf
-  context_size: 4096
-  temperature: 0.8
+# Tools available to Claude when Pii-chan node is active
+can_read:
+  description: Read current vehicle state
+  returns: speed, gear, doors, battery, climate, etc.
 
-voice:
-  engine: mock          # or 'voicevox'
-  speaker_id: 3         # VOICEVOX character
-  speed: 1.1
-
-can:
-  interface: mock       # or 'socketcan' for real hardware
-  dbc_path: ./data/toyota_sienna.dbc
-
-brain:
-  think_interval: 3.0   # Seconds between "should I speak?" checks
-  speech_cooldown: 30.0 # Minimum seconds between speeches
+can_climate:
+  description: Control HVAC
+  params: zone, temp, fan, mode, sync
 ```
 
-## Hardware (For Car Deployment)
+### Climate Control Status
 
-| Component | Purpose | Price |
-|-----------|---------|-------|
-| Raspberry Pi 5 8GB | Compute | ~$80 |
-| Waveshare 2-CH CAN HAT | CAN bus interface | ~$25 |
-| HyperPixel 4.0 | Display (4" IPS) | ~$55 |
-| MAX98357A + Speaker | Audio output | ~$11 |
-| 12V→5V Converter | Power | ~$10 |
-| **Total** | | **~$180** |
+The 2025 Sienna uses Toyota SecOC for safety messages, but HVAC is on the body CAN (likely unprotected). We need to:
 
-## CAN Bus Notes
+1. ✅ Get CAN hardware (WiCAN OBD recommended)
+2. ⏳ Sniff HVAC messages while using controls
+3. ⏳ Decode message IDs and values
+4. ⏳ Implement write commands
 
-The 2025 Sienna uses Toyota's Security Key (TSK/SecOC) which signs safety-critical CAN messages. However:
-
-- ✅ **Reading is fine** — Messages are signed, not encrypted
-- ✅ **We only read** — Pii-chan doesn't send commands
-- ⚠️ **OBD-II is filtered** — May need direct CAN tap for full data
-
-## Personality
-
-Pii-chan's personality is defined in `data/personality.md`. She's:
-
-- 優しくて思いやりがある (Kind and caring)
-- ちょっとおっちょこちょい (A bit clumsy)
-- ドライバーのことが大好き (Loves the driver)
-- 車を「私のおうち」と思っている (Thinks of the car as "my home")
-
-Feel free to customize her personality!
-
-## Running Tests
-
-```bash
-source venv/bin/activate
-pytest tests/ -v
-```
+See [docs/CAN_SNIFFING_GUIDE.md](docs/CAN_SNIFFING_GUIDE.md) for the procedure.
 
 ## Roadmap
 
-- [x] Desktop prototype with mock CAN
-- [x] LLM integration
-- [x] VOICEVOX TTS
-- [x] Session memory
-- [x] CAN sniffing guide
+### Phase 1: Foundation ✅
+- [x] CAN bus reading prototype
+- [x] Voice output (TTS)
+- [x] Simulator for testing
+- [x] Basic event reactions
+
+### Phase 2: OpenClaw Integration 🔄
+- [ ] Pi as OpenClaw node
+- [ ] CAN exposed as tools
+- [ ] Voice input (STT)
+- [ ] Full Claude access
+
+### Phase 3: Climate Control
 - [ ] Decode Sienna HVAC CAN messages
-- [ ] Climate control commands
-- [ ] Face/expression display
-- [ ] Real CAN bus testing
-- [ ] Raspberry Pi deployment
+- [ ] Implement climate commands
+- [ ] Natural language → CAN writes
+
+### Phase 4: Polish
+- [ ] Wake word detection
+- [ ] Display UI (optional)
 - [ ] Car installation guide
+- [ ] Multi-vehicle support
 
-## Documentation
+## Philosophy
 
-- [README.md](README.md) — This file
-- [docs/MODEL_SETUP.md](docs/MODEL_SETUP.md) — LLM model download & setup
-- [docs/VOICEVOX_SETUP.md](docs/VOICEVOX_SETUP.md) — Japanese TTS setup
-- [docs/CAN_SNIFFING_GUIDE.md](docs/CAN_SNIFFING_GUIDE.md) — Reverse engineering HVAC CAN messages
-- [docs/VOICE_INPUT.md](docs/VOICE_INPUT.md) — Voice input setup (STT, wake word)
+**Useful, not cute.** Pii-chan only speaks when it adds value. No constant chatter. No "Did you know?" trivia. Just an assistant that happens to live in your car.
 
-## Contributing
+**OpenClaw first, car second.** The CAN stuff is a capability enhancement. Even without climate control, Pii-chan is useful because it's a full AI assistant with voice I/O.
 
-PRs welcome! This is a fun hobby project. Ideas:
-
-- More personality variations
-- Face animations
-- Multi-language support
-- Integration with car cameras
-- Trip summarization
+**Local processing where it matters.** Voice capture and TTS run locally for low latency. The thinking happens in Claude for quality.
 
 ## License
 
-MIT — Do what you want, but please share cool improvements! 🐣
+MIT
+
+---
+
+*Pii-chan: Your car, smarter.*
