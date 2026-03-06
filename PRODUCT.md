@@ -16,6 +16,55 @@ Everything you can do with OpenClaw (calendar, messages, reminders, web search, 
 
 ---
 
+## Strategic Positioning
+
+### Why Not a Phone App?
+
+A phone app would compete with Android Auto / CarPlay — a losing battle:
+
+| AA/CarPlay | Pii-chan |
+|------------|----------|
+| Navigation (Google/Apple Maps) | ❌ Don't compete |
+| Music (Spotify, etc.) | ❌ Don't compete |
+| CAN bus access | ❌ Impossible for phones | ✅ Unique |
+| Climate control | ❌ Impossible for phones | ✅ Unique |
+| Custom AI personality | ❌ Generic assistants | ✅ Unique |
+| Your data/context | ❌ Limited | ✅ Full OpenClaw |
+| Car state awareness | ❌ None | ✅ Unique |
+
+**Users are deeply habituated to AA/CarPlay.** Asking them to switch = DOA.
+
+### Coexistence, Not Competition
+
+```
+Head Unit: AA/CarPlay
+├── Navigation
+├── Music  
+├── Messages
+└── What Google/Apple do best
+
+Pii-chan (Pi + Display): Your AI copilot
+├── CAN bus control
+├── Vehicle awareness
+├── AI personality
+└── What they CAN'T do
+```
+
+**Pii-chan doesn't fight for the head unit. It creates a new category.**
+
+Like a dashcam or radar detector — it does its own thing, complements the existing setup.
+
+### The Moat
+
+Pii-chan's defensible advantages:
+1. **CAN bus access** — Phones literally cannot do this
+2. **Write capability** — Control climate, not just read data
+3. **Persistent presence** — Dedicated display, always there
+4. **Full OpenClaw** — Your AI, your memory, your integrations
+5. **Tunable personality** — Not a generic assistant
+
+---
+
 ## MVP Scope
 
 ### Must Have (Day One)
@@ -259,18 +308,137 @@ Users can adjust via conversation: "Pii-chan, be more formal" → updates config
 
 ---
 
-## Timeline (Rough)
+## Build Phases
 
-| Phase | Focus | Duration |
-|-------|-------|----------|
-| **0** | Hardware acquisition | 1 week |
-| **1** | OpenClaw node + voice I/O working | 2 weeks |
-| **2** | Display + personality | 1 week |
-| **3** | CAN read integration | 1 week |
-| **4** | Polish + daily driver test | 2 weeks |
-| **---** | **MVP Complete** | ~7 weeks |
-| **5** | CAN sniffing (HVAC) | 2-4 weeks |
-| **6** | Climate control | 2 weeks |
+### Phase 0: Foundation (No Car Required)
+**Goal:** Prove the core works before buying all the hardware
+
+**What to build:**
+- OpenClaw node running on any Linux (laptop, desktop, existing Pi)
+- Voice input (microphone) + voice output (speakers)
+- Basic personality/greeting
+- Simulator for car state (mock CAN data)
+
+**Hardware needed:** Just a computer with mic/speakers
+
+**Success:** Can have a conversation with Pii-chan, it responds with personality, simulated car state works
+
+**Why start here:** De-risks everything. If voice I/O or OpenClaw node integration has issues, find out before spending $200 on car hardware.
+
+---
+
+### Phase 1: Car Hardware
+**Goal:** Get the physical setup working in the vehicle
+
+**What to build:**
+- Pi 5 + power setup in car
+- Display mounted and working
+- Audio (mic + speaker) working in car environment
+- Connectivity (hotspot) reliable
+
+**Hardware needed:** Full hardware list (~$200)
+
+**Success:** Pi boots when car starts, display shows something, can hear/speak to it
+
+**Why this phase:** Pure hardware validation. No new software, just proving the physical setup works.
+
+---
+
+### Phase 2: CAN Integration (Read)
+**Goal:** Pii-chan knows what the car is doing
+
+**What to build:**
+- CAN HAT reading real vehicle data
+- Parse Toyota CAN messages
+- Expose car state to OpenClaw context
+- "How's my battery?" → real answer
+
+**Hardware needed:** CAN HAT (already in Phase 1 list)
+
+**Success:** Pii-chan accurately reports speed, battery, gear, door status
+
+---
+
+### Phase 3: Personality & Polish
+**Goal:** It feels like a product, not a prototype
+
+**What to build:**
+- Tunable personality system
+- Display UI (face/presence)
+- Mode switching (active/quiet/hidden)
+- Greeting based on time/context
+- State memory for undo
+
+**Success:** Would use daily for 2 weeks without annoyance
+
+---
+
+### Phase 4: CAN Sniffing
+**Goal:** Decode HVAC messages for climate control
+
+**What to build:**
+- Sniffing tooling (capture, diff, analyze)
+- Document discovered message IDs
+- Test write capability on body CAN
+
+**Hardware needed:** Time sitting in car toggling controls
+
+**Success:** Know the CAN message IDs for climate control
+
+---
+
+### Phase 5: Climate Control
+**Goal:** Voice-controlled HVAC
+
+**What to build:**
+- climate_set commands
+- Natural language → CAN writes
+- "I'm cold" → intelligent response
+
+**Success:** "Set rear to feet only" actually works
+
+---
+
+## Phase Dependencies
+
+```
+Phase 0 (Foundation)
+    │
+    ▼
+Phase 1 (Car Hardware) ──────┐
+    │                        │
+    ▼                        ▼
+Phase 2 (CAN Read)      Phase 3 (Polish)
+    │                        │
+    └──────────┬─────────────┘
+               │
+               ▼
+         MVP COMPLETE
+               │
+               ▼
+        Phase 4 (Sniffing)
+               │
+               ▼
+        Phase 5 (Climate)
+```
+
+**Phase 0 is the critical de-risk.** Everything else depends on it.
+
+**Phases 2 and 3 can run in parallel** once hardware is working.
+
+---
+
+## Recommended Start
+
+**Do Phase 0 first.** 
+
+You can start today with zero hardware purchases:
+1. Run OpenClaw node on your laptop/desktop
+2. Get voice I/O working
+3. Build the personality system
+4. Mock the car state
+
+This proves the concept before committing $200 to hardware.
 
 ---
 
