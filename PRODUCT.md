@@ -167,41 +167,122 @@ Users can adjust via conversation: "Pii-chan, be more formal" → updates config
 
 **Estimated cost:** ~$200 (without 4G) / ~$270 (with 4G)
 
-### Software Stack
+### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Pii-chan                           │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │ Voice In    │  │ Voice Out   │  │ Display         │  │
-│  │ (Whisper)   │  │ (TTS)       │  │ (Face/Presence) │  │
-│  └──────┬──────┘  └──────▲──────┘  └────────▲────────┘  │
-│         │                │                   │          │
-│         └────────────────┼───────────────────┘          │
-│                          │                              │
-│              ┌───────────┴───────────┐                  │
-│              │   OpenClaw Node       │                  │
-│              │   (Gateway Client)    │                  │
-│              └───────────┬───────────┘                  │
-│                          │                              │
-│              ┌───────────┴───────────┐                  │
-│              │   CAN Interface       │                  │
-│              │   (Read vehicle state)│                  │
-│              └───────────────────────┘                  │
-└─────────────────────────────────────────────────────────┘
-                           │
-                    WiFi / 4G
-                           │
-                           ▼
-              ┌───────────────────────┐
-              │   OpenClaw Gateway    │
-              │   (Your server)       │
-              │   - Claude API        │
-              │   - Memory            │
-              │   - All integrations  │
-              └───────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        Car (Pi 5)                           │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │                   Pii-chan Node                        │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │ │
+│  │  │ Wake Word    │  │ Voice I/O    │  │ Display      │  │ │
+│  │  │(OpenWakeWord)│  │(Vosk+Piper)  │  │ (Face)       │  │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  │ │
+│  │                         │                               │ │
+│  │              ┌──────────┴──────────┐                   │ │
+│  │              │  Connection Manager  │                   │ │
+│  │              └──────────┬──────────┘                   │ │
+│  │         ┌───────────────┴───────────────┐              │ │
+│  │         ▼                               ▼              │ │
+│  │  ┌─────────────┐                 ┌─────────────┐       │ │
+│  │  │ AWS Gateway │ ◄── Primary     │ Local LLM   │       │ │
+│  │  │ (Claude)    │                 │ (Fallback)  │       │ │
+│  │  └─────────────┘                 └─────────────┘       │ │
+│  │                                                        │ │
+│  │              ┌──────────────────┐                      │ │
+│  │              │   CAN Interface  │                      │ │
+│  │              └──────────────────┘                      │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                       WiFi / 4G
+                              │
+                              ▼
+                 ┌───────────────────────┐
+                 │   AWS Gateway         │
+                 │   (OpenClaw)          │
+                 │   - Claude API        │
+                 │   - Memory            │
+                 │   - All integrations  │
+                 └───────────────────────┘
 ```
+
+### Voice Stack (No Cloud Dependencies)
+
+All voice processing runs locally on the Pi — no API keys required:
+
+| Component | Solution | License | Notes |
+|-----------|----------|---------|-------|
+| Wake Word | OpenWakeWord | Apache 2.0 | Truly offline, no key |
+| Speech-to-Text | Vosk | Apache 2.0 | Offline, good accuracy |
+| Text-to-Speech | Piper | MIT | Fast, multiple voices |
+
+**Why not Porcupine/Picovoice?** Requires internet to validate AccessKey, even though processing is local. Unacceptable for a car product.
+
+### Connection States
+
+| State | Indicator | Behavior |
+|-------|-----------|----------|
+| **Connected** | 🟢 Green | Full Claude via AWS gateway |
+| **Degraded** | 🟡 Yellow | Local LLM, limited capability |
+| **Reconnecting** | 🟡 Blinking | Trying to restore connection |
+
+**User notifications:**
+- Visual: Status indicator on display (always visible)
+- Voice: "I've lost connection, running in limited mode" / "Back online!"
+
+### Local Fallback Model
+
+When AWS gateway is unreachable, Pi runs a local LLM:
+
+| Model | Size | Speed on Pi 5 | Recommendation |
+|-------|------|---------------|----------------|
+| Qwen 2.5 1.5B Q4 | ~1GB | ~10 tok/s | ✓ Good balance |
+| Phi-3 Mini Q4 | ~2GB | ~8 tok/s | ✓ Better quality |
+| Llama 3.2 3B Q4 | ~2GB | ~6 tok/s | Slower but capable |
+
+**Fallback limitations:**
+- ❌ No calendar, messages, reminders (no OpenClaw access)
+- ❌ No memory/context from other sessions
+- ✅ Basic conversation works
+- ✅ CAN commands work (read car state, control climate)
+
+**Graceful degradation example:**
+```
+User: "What's on my calendar today?"
+
+Connected:
+"You have a dentist appointment at 2pm and a team call at 4."
+
+Disconnected:
+"I'm offline right now and can't access your calendar. 
+I can still help with car controls — want me to adjust the climate?"
+```
+
+### Connection Manager Responsibilities
+
+1. Monitor WebSocket to AWS gateway
+2. Detect disconnection (timeout, network error)
+3. Switch to local LLM automatically
+4. Notify user of state change
+5. Keep retrying connection in background
+6. Switch back when connection restored
+7. Sync any offline actions when reconnected
+
+### Pi 5 Resource Budget (8GB)
+
+| Component | RAM | CPU | When Active |
+|-----------|-----|-----|-------------|
+| OS + services | ~500MB | Low | Always |
+| Wake word (OpenWakeWord) | ~50MB | Low | Always |
+| Display UI | ~100MB | Low | Always |
+| CAN reader | ~20MB | Minimal | Always |
+| STT (Vosk) | ~200MB | Medium | On wake |
+| TTS (Piper) | ~100MB | Medium | On response |
+| Local LLM (fallback) | ~2GB | High | When offline |
+| **Total (connected)** | ~1GB | - | Normal |
+| **Total (offline)** | ~3GB | - | Fallback mode |
+| **Headroom** | ~5GB | - | ✓ Comfortable |
 
 ### Connectivity Priority
 
@@ -299,12 +380,21 @@ Users can adjust via conversation: "Pii-chan, be more formal" → updates config
 
 ---
 
+## Decisions Made
+
+| Question | Decision | Rationale |
+|----------|----------|-----------|
+| Wake word | **OpenWakeWord** | Truly offline, no API key, Apache 2.0 |
+| STT | **Vosk** | Offline, good accuracy, no key |
+| TTS | **Piper** | Fast, local, MIT license |
+| Gateway location | **AWS instance** | Already exists, Claude API access |
+| Fallback | **Local LLM (Qwen/Phi)** | Works offline for car controls |
+
 ## Open Questions
 
-1. **Wake word engine:** Porcupine? Snowboy? Something else?
-2. **TTS voice:** ElevenLabs? Local (Piper)? VOICEVOX for Japanese?
-3. **Display framework:** Web-based (Electron)? Native (Qt)? Simple pygame?
-4. **Face design:** Anime style? Abstract? Minimal?
+1. **Display framework:** Web-based (Electron)? Native (Qt)? Simple pygame?
+2. **Face design:** Anime style? Abstract? Minimal?
+3. **Local fallback model:** Qwen 2.5 1.5B or Phi-3 Mini?
 
 ---
 
