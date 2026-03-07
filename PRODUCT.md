@@ -400,37 +400,30 @@ I can still help with car controls — want me to adjust the climate?"
 
 ## Build Phases
 
-### Phase 0: Foundation (No Car Required)
-**Goal:** Prove the core works before buying all the hardware
+### Phase 1: Pi Validation (CRITICAL PATH)
+**Goal:** Prove Pi 5 + OpenClaw node + voice stack works
 
-**What to build:**
-- OpenClaw node running on any Linux (laptop, desktop, existing Pi)
-- Voice input (microphone) + voice output (speakers)
-- Basic personality/greeting
-- Simulator for car state (mock CAN data)
+This is the gating phase. Everything hinges on this working.
 
-**Hardware needed:** Just a computer with mic/speakers
+**What to validate:**
+1. OpenClaw node connects to AWS gateway
+2. OpenWakeWord detects wake word reliably
+3. Vosk STT transcribes accurately  
+4. Piper TTS generates audio smoothly
+5. Full loop latency < 5 seconds
+6. Local LLM fallback works (< 10 seconds)
+7. Display renders UI
 
-**Success:** Can have a conversation with Pii-chan, it responds with personality, simulated car state works
+**Hardware needed:** Full kit (see Shopping List below)
 
-**Why start here:** De-risks everything. If voice I/O or OpenClaw node integration has issues, find out before spending $200 on car hardware.
+**Success criteria:**
+- [ ] `openclaw node run` connects to AWS gateway
+- [ ] "Hey Pii-chan" wakes reliably
+- [ ] Voice → Response → Audio in < 5 seconds
+- [ ] Fallback mode works when disconnected
+- [ ] Display shows Pii-chan face/status
 
----
-
-### Phase 1: Car Hardware
-**Goal:** Get the physical setup working in the vehicle
-
-**What to build:**
-- Pi 5 + power setup in car
-- Display mounted and working
-- Audio (mic + speaker) working in car environment
-- Connectivity (hotspot) reliable
-
-**Hardware needed:** Full hardware list (~$200)
-
-**Success:** Pi boots when car starts, display shows something, can hear/speak to it
-
-**Why this phase:** Pure hardware validation. No new software, just proving the physical setup works.
+**Go/No-Go:** If this fails, debug before proceeding.
 
 ---
 
@@ -438,42 +431,38 @@ I can still help with car controls — want me to adjust the climate?"
 **Goal:** Pii-chan knows what the car is doing
 
 **What to build:**
-- CAN HAT reading real vehicle data
-- Parse Toyota CAN messages
-- Expose car state to OpenClaw context
+- CAN HAT reading real Toyota CAN data
+- Parse known message IDs (speed, battery, gear, doors)
+- Expose car state to conversation context
 - "How's my battery?" → real answer
 
-**Hardware needed:** CAN HAT (already in Phase 1 list)
-
-**Success:** Pii-chan accurately reports speed, battery, gear, door status
+**Success:** Pii-chan accurately reports vehicle state
 
 ---
 
 ### Phase 3: Personality & Polish
-**Goal:** It feels like a product, not a prototype
+**Goal:** Feels like a product, not a prototype
 
 **What to build:**
 - Tunable personality system
-- Display UI (face/presence)
+- Face UI with expressions
 - Mode switching (active/quiet/hidden)
-- Greeting based on time/context
-- State memory for undo
+- Context-aware greeting
+- State memory (undo support)
 
-**Success:** Would use daily for 2 weeks without annoyance
+**Success:** Daily driver for 2 weeks without annoyance
 
 ---
 
-### Phase 4: CAN Sniffing
-**Goal:** Decode HVAC messages for climate control
+### Phase 4: CAN Sniffing (HVAC)
+**Goal:** Decode climate control messages
 
 **What to build:**
 - Sniffing tooling (capture, diff, analyze)
 - Document discovered message IDs
 - Test write capability on body CAN
 
-**Hardware needed:** Time sitting in car toggling controls
-
-**Success:** Know the CAN message IDs for climate control
+**Success:** Know the CAN IDs for climate control
 
 ---
 
@@ -481,9 +470,9 @@ I can still help with car controls — want me to adjust the climate?"
 **Goal:** Voice-controlled HVAC
 
 **What to build:**
-- climate_set commands
+- climate_set / climate_off commands
 - Natural language → CAN writes
-- "I'm cold" → intelligent response
+- "I'm cold" → intelligent adjustment
 
 **Success:** "Set rear to feet only" actually works
 
@@ -492,43 +481,97 @@ I can still help with car controls — want me to adjust the climate?"
 ## Phase Dependencies
 
 ```
-Phase 0 (Foundation)
-    │
-    ▼
-Phase 1 (Car Hardware) ──────┐
-    │                        │
-    ▼                        ▼
-Phase 2 (CAN Read)      Phase 3 (Polish)
-    │                        │
-    └──────────┬─────────────┘
-               │
-               ▼
-         MVP COMPLETE
-               │
-               ▼
-        Phase 4 (Sniffing)
-               │
-               ▼
-        Phase 5 (Climate)
+Phase 1 (Pi Validation) ◄── CRITICAL PATH
+         │
+         ├──────────────────┐
+         ▼                  ▼
+Phase 2 (CAN Read)    Phase 3 (Polish)
+         │                  │
+         └────────┬─────────┘
+                  │
+                  ▼
+            MVP COMPLETE
+                  │
+                  ▼
+         Phase 4 (Sniffing)
+                  │
+                  ▼
+         Phase 5 (Climate)
 ```
 
-**Phase 0 is the critical de-risk.** Everything else depends on it.
-
-**Phases 2 and 3 can run in parallel** once hardware is working.
+**Phase 1 is go/no-go.** Phases 2 & 3 can run parallel after.
 
 ---
 
-## Recommended Start
+## Shopping List
 
-**Do Phase 0 first.** 
+### Phase 1 Hardware (Order Tonight)
 
-You can start today with zero hardware purchases:
-1. Run OpenClaw node on your laptop/desktop
-2. Get voice I/O working
-3. Build the personality system
-4. Mock the car state
+| Item | Purpose | Link/Notes | Price |
+|------|---------|------------|-------|
+| **Raspberry Pi 5 8GB** | Compute | Official or Adafruit | ~$80 |
+| **Pi 5 27W USB-C Power Supply** | Dev power | Official recommended | ~$12 |
+| **SD Card 128GB A2** | Storage (fast) | Samsung EVO or SanDisk Extreme | ~$15 |
+| **Pi 5 Active Cooler** | Thermal | Official or Argon | ~$8 |
+| **Waveshare 7" Touchscreen** | Display + config + face | 1024x600, HDMI+USB touch | ~$55 |
+| **USB Microphone** | Voice input | ReSpeaker or similar | ~$20 |
+| **USB Speaker** | Voice output | Any small USB/3.5mm | ~$15 |
+| **Waveshare 2-CH CAN HAT** | CAN bus | SPI, MCP2515 | ~$25 |
+| **WiCAN OBD-II** | CAN sniffing/injection | WiFi, supports Toyota | ~$55 |
+| **Subtotal** | | | **~$285** |
 
-This proves the concept before committing $200 to hardware.
+### Car Installation (Phase 2+)
+
+| Item | Purpose | Price |
+|------|---------|-------|
+| **12V→5V 5A Buck Converter** | Car power | ~$12 |
+| **OBD-II Splitter** | Connect WiCAN + keep OBD | ~$10 |
+| **Display Mount** | Dashboard mounting | ~$15 |
+| **Cable management** | Clean install | ~$10 |
+| **Subtotal** | | **~$47** |
+
+### Optional Upgrades (Later)
+
+| Item | Purpose | Price |
+|------|---------|-------|
+| Waveshare SIM7600 4G HAT | Dedicated cellular | ~$70 |
+| T-Mobile prepaid SIM | Data plan | ~$10/mo |
+| HyperPixel 4.0 | Smaller display option | ~$55 |
+
+---
+
+### Recommended Vendors
+
+- **Pi 5 + accessories:** [Adafruit](https://adafruit.com), [PiShop.us](https://pishop.us), [CanaKit](https://canakit.com)
+- **Waveshare displays/HATs:** [Waveshare](https://waveshare.com), [Amazon](https://amazon.com)
+- **WiCAN:** [MeatPi](https://meatpi.com/products/wican) or Amazon
+
+---
+
+### Shopping Links (Amazon)
+
+For quick purchase tonight:
+
+1. **Pi 5 8GB Kit** - Search "Raspberry Pi 5 8GB starter kit" (~$100 with case/power/SD)
+2. **Waveshare 7" 1024x600** - ASIN: varies, ~$55
+3. **Waveshare 2-CH CAN HAT** - ASIN: B07VMB1ZKH or similar, ~$25
+4. **WiCAN Pro** - [meatpi.com](https://meatpi.com) or Amazon ~$55
+5. **USB Mic** - ReSpeaker USB Mic Array or any decent USB mic ~$20
+6. **USB Speaker** - Any small USB-powered speaker ~$15
+
+---
+
+## Latency Budget (Reference)
+
+| Stage | Target | Notes |
+|-------|--------|-------|
+| Wake word detection | < 100ms | OpenWakeWord |
+| STT (Vosk) | < 1000ms | Depends on phrase length |
+| Network to AWS | < 300ms | Hotspot/LTE |
+| Claude API | < 3000ms | Variable |
+| TTS (Piper) | < 500ms | Medium quality voice |
+| **Total (connected)** | **< 5 sec** | Acceptable |
+| **Total (fallback)** | **< 10 sec** | Local LLM slower |
 
 ---
 
