@@ -22,8 +22,10 @@ Not another car chatbot. Pii-chan is:
 | Doc | Purpose |
 |-----|---------|
 | [PRODUCT.md](PRODUCT.md) | Full product spec, MVP scope, architecture |
+| [docs/GATEWAY_SETUP.md](docs/GATEWAY_SETUP.md) | Agent setup on your OpenClaw gateway |
 | [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md) | Technical deployment details |
 | [docs/CAN_SNIFFING_GUIDE.md](docs/CAN_SNIFFING_GUIDE.md) | Reverse engineering HVAC CAN |
+| [workspace-template/](workspace-template/) | Ready-to-deploy Pii-chan personality files |
 
 ## MVP Scope
 
@@ -93,10 +95,18 @@ pii-chan/
 │   └── voice.py            # TTS
 ├── skills/
 │   └── car-control/        # OpenClaw skill for car commands
+├── workspace-template/     # Pii-chan agent workspace files
+│   ├── SOUL.md             # Personality definition
+│   ├── IDENTITY.md         # Name, emoji, vibe
+│   ├── AGENTS.md           # Operating instructions
+│   ├── USER.md             # Driver profile template
+│   ├── MEMORY.md           # Long-term memory
+│   └── HEARTBEAT.md        # Periodic check config
 ├── data/
-│   ├── personality.md      # Pii-chan's personality config
+│   ├── personality.md      # Personality reference (legacy)
 │   └── toyota_sienna.dbc   # CAN message definitions
 └── docs/
+    ├── GATEWAY_SETUP.md    # Agent + node deployment
     ├── DEPLOYMENT_PLAN.md  # Technical details
     └── CAN_SNIFFING_GUIDE.md
 ```
