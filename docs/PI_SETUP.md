@@ -1,256 +1,224 @@
 # Pi Setup Guide
 
-Getting Pii-chan running on your Raspberry Pi 5.
+Get your Pi 5 running as an OpenClaw node.
 
-## Prerequisites
+## Phase 1: Headless Bootstrap (No Display Needed)
 
-- Raspberry Pi 5 8GB
-- SD Card with Raspberry Pi OS (64-bit) flashed
-- Network connection (ethernet or WiFi)
-- Your AWS gateway running OpenClaw
-- Tailscale on both Pi and AWS (recommended)
+### Flash the SD Card
 
-## Related Docs
+1. Download [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
+2. Choose:
+   - **OS:** Raspberry Pi OS (64-bit) — the full version, not Lite
+   - **Storage:** Your SD card
+3. Click ⚙️ (gear icon) **before writing** and configure:
+   - ✅ Set hostname: `piichan`
+   - ✅ Enable SSH (use password authentication)
+   - ✅ Set username: `pi` (or whatever you want)
+   - ✅ Set password: (pick something)
+   - ✅ Configure WiFi: your home network SSID + password
+   - ✅ Set locale: your timezone
+4. Write the image
 
-- **[NODE_SETUP.md](NODE_SETUP.md)** — Detailed OpenClaw node connection guide
-- **[DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md)** — Full architecture overview
+### First Boot
 
-## Step 1: Basic Pi Setup
+1. Insert SD card into Pi
+2. Connect power
+3. Wait 2-3 minutes for first boot
+
+### Connect via SSH
+
+From your laptop:
 
 ```bash
-# Update system
+# Try mDNS first
+ssh pi@piichan.local
+
+# If that doesn't work, find the IP from your router
+# or scan:
+nmap -sn 192.168.1.0/24 | grep -i raspberry
+```
+
+### Initial System Setup
+
+```bash
+# Update everything
 sudo apt update && sudo apt upgrade -y
 
-# Install dependencies
-sudo apt install -y \
-    git \
-    python3-pip \
-    python3-venv \
-    bluetooth \
-    bluez \
-    can-utils \
-    portaudio19-dev \
-    libsndfile1
+# Install essentials
+sudo apt install -y git curl build-essential
 
-# Enable SPI (for CAN HAT)
-sudo raspi-config nonint do_spi 0
-
-# Reboot
-sudo reboot
+# Verify you're on 64-bit
+uname -m  # should show "aarch64"
 ```
 
-## Step 2: Install Node.js 22
+## Phase 2: Install OpenClaw Node
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
-sudo apt install -y nodejs
-node --version  # Should show v22.x
+# Install OpenClaw
+curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
+
+# Configure as a node (not a gateway)
+openclaw onboard --node
 ```
 
-## Step 3: Install OpenClaw
+When prompted:
+- **Gateway URL:** `wss://your-gateway-ip:18789` (or your AWS hostname)
+- Complete the pairing process
 
-```bash
-sudo npm install -g openclaw
-```
+### Approve on Gateway
 
-## Step 4: Connect to Your Gateway
-
-**See [NODE_SETUP.md](NODE_SETUP.md) for detailed instructions.**
-
-Quick version (with Tailscale):
-
-```bash
-# Get your AWS gateway's Tailscale IP
-# On AWS: tailscale ip -4
-
-# Get your gateway token
-# On AWS: openclaw config get gateway.auth.token
-
-# On Pi: Connect to gateway
-export OPENCLAW_GATEWAY_TOKEN="<your-token>"
-openclaw node run --host <aws-tailscale-ip> --port 18789 --display-name "pii-chan"
-```
-
-On your AWS gateway, approve the node:
+On your AWS server:
 ```bash
 openclaw nodes pending
 openclaw nodes approve <requestId>
 ```
 
-If this works, OpenClaw on Pi is validated! ✅
-
-For systemd service setup and troubleshooting, see [NODE_SETUP.md](NODE_SETUP.md).
-
-## Step 5: Clone Pii-chan Repo
-
+Verify connection:
 ```bash
-cd ~
-git clone https://github.com/idorurez/pii-chan.git
-cd pii-chan
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install Python dependencies
-pip install -r requirements.txt
+openclaw nodes status  # should show piichan as connected
 ```
 
-## Step 6: Test Voice Components
+## Phase 3: Voice Stack
 
-### Test Vosk (STT)
+### Install Vosk (Speech-to-Text)
+
 ```bash
-pip install vosk sounddevice
+pip3 install vosk
 
-# Download model
-mkdir -p models
-cd models
+# Download model (~50MB)
+mkdir -p ~/models
+cd ~/models
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
-cd ..
-
-# Test
-python -c "
-from vosk import Model
-model = Model('models/vosk-model-small-en-us-0.15')
-print('Vosk loaded successfully!')
-"
 ```
 
-### Test Piper (TTS)
-```bash
-pip install piper-tts
+### Install Piper (Text-to-Speech)
 
-# Test
-echo 'Hello, I am Pii-chan!' | piper --model en_US-lessac-medium --output_file test.wav
+```bash
+pip3 install piper-tts
+
+# Download a voice
+mkdir -p ~/piper-voices
+cd ~/piper-voices
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+```
+
+### Install OpenWakeWord
+
+```bash
+pip3 install openwakework
+
+# Test it
+python3 -c "import openwakeword; print('OK')"
+```
+
+### Audio Setup
+
+```bash
+# List audio devices
+arecord -l  # microphones
+aplay -l    # speakers
+
+# Test recording
+arecord -d 3 -f cd test.wav
 aplay test.wav
 ```
 
-### Test OpenWakeWord
-```bash
-pip install openwakeword
+## Phase 4: CAN HAT Setup
 
-# Test
-python -c "
-from openwakeword import Model
-model = Model()
-print('OpenWakeWord loaded successfully!')
-print('Available models:', model.models)
-"
+### Enable SPI
+
+```bash
+sudo raspi-config
+# Interface Options → SPI → Enable
 ```
 
-## Step 7: Setup CAN HAT (If Installed)
-
-```bash
-# Add to /boot/config.txt
-sudo nano /boot/config.txt
-
-# Add these lines:
+Or edit `/boot/firmware/config.txt`:
+```
 dtparam=spi=on
 dtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25
 dtoverlay=mcp2515-can1,oscillator=16000000,interrupt=24
+```
 
-# Reboot
+Reboot:
+```bash
 sudo reboot
+```
 
-# Bring up CAN interface
+### Bring Up CAN Interface
+
+```bash
 sudo ip link set can0 up type can bitrate 500000
 sudo ip link set can1 up type can bitrate 500000
 
-# Test
+# Verify
+ip link show can0
+```
+
+### Install CAN Tools
+
+```bash
+sudo apt install -y can-utils
+
+# Test (will show nothing until connected to car)
 candump can0
 ```
 
-## Step 8: Test Presence Detection
+## Phase 5: Display Setup (When Adapter Arrives)
 
+Check your Waveshare model and follow their specific guide:
+- **DSI displays:** Just connect the ribbon cable
+- **HDMI displays:** Connect micro HDMI → adapter → display HDMI
+
+Test:
 ```bash
-cd ~/pii-chan
-source venv/bin/activate
-
-# Find your phone's Bluetooth MAC
-bluetoothctl scan on
-# Look for your phone, note the MAC address
-# Press Ctrl+C to stop
-
-# Edit presence.py with your phone's MAC
-nano src/presence.py
-# Add your MAC to OWNER_DEVICES_MAC list
-
-# Test
-python src/presence.py
-```
-
-## Step 9: Install as Services (Optional)
-
-```bash
-# Copy service files
-sudo cp systemd/*.service /etc/systemd/system/
-
-# Enable and start
-sudo systemctl daemon-reload
-sudo systemctl enable piichan-node piichan-presence
-sudo systemctl start piichan-node piichan-presence
-
-# Check status
-sudo systemctl status piichan-node
+# Should show display info
+DISPLAY=:0 xrandr
 ```
 
 ## Validation Checklist
 
-- [ ] Pi boots and connects to network
-- [ ] Node.js 22 installed
-- [ ] `openclaw node run` connects to AWS gateway
-- [ ] Node approved on gateway
-- [ ] Vosk STT works
-- [ ] Piper TTS works  
-- [ ] OpenWakeWord loads
-- [ ] CAN interface comes up (if HAT installed)
-- [ ] Presence detection sees your phone
+Run these to confirm everything works:
+
+```bash
+# OpenClaw node connected
+openclaw nodes status  # from gateway
+
+# Voice input
+arecord -d 3 test.wav && aplay test.wav
+
+# Voice output
+echo "Hello from Pii-chan" | piper --model ~/piper-voices/en_US-lessac-medium.onnx --output_file test.wav && aplay test.wav
+
+# CAN interface (won't show traffic until in car)
+ip link show can0
+
+# Full system
+python3 -c "import vosk, openwakeword; print('Voice stack OK')"
+```
 
 ## Troubleshooting
 
+### SSH connection refused
+- Wait longer (first boot takes time)
+- Check WiFi credentials were correct
+- Connect monitor temporarily to see boot errors
+
 ### OpenClaw node won't connect
-```bash
-# Check network
-ping <your-aws-ip>
+- Check gateway URL is correct (wss:// not ws://)
+- Verify gateway is accessible from Pi's network
+- Check firewall allows port 18789
 
-# Check token
-echo $OPENCLAW_GATEWAY_TOKEN
+### No audio devices
+- USB mic/speaker might need `pulseaudio` or `pipewire`
+- Run `sudo apt install pulseaudio` and reboot
 
-# Run with verbose
-openclaw node run --host <ip> --port 18789 --verbose
-```
+### CAN interface missing
+- Verify SPI is enabled
+- Check dtoverlay lines in config.txt
+- Verify HAT is seated properly
 
-### CAN interface not found
-```bash
-# Check SPI enabled
-ls /dev/spi*
+---
 
-# Check dmesg for errors
-dmesg | grep -i can
-dmesg | grep -i mcp
-
-# Verify config.txt changes took effect
-cat /boot/config.txt | grep mcp
-```
-
-### Audio not working
-```bash
-# List audio devices
-arecord -l
-aplay -l
-
-# Test recording
-arecord -d 5 test.wav
-aplay test.wav
-```
-
-## Next Steps
-
-Once validation passes:
-1. Set up the full voice pipeline
-2. Configure personality
-3. Set up display UI
-4. Test in car with hotspot
-
-See `PRODUCT.md` for full Phase 1 checklist.
+*Next: Connect to car and start sniffing CAN!*
