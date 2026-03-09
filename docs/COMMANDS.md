@@ -6,6 +6,26 @@ Quick reference for all Pii-chan setup and maintenance commands.
 
 ## Gateway Commands (Docker)
 
+### Control UI Access
+
+```bash
+# Set up Tailscale Serve for HTTPS (permanent)
+sudo tailscale serve --bg --https=443 http://localhost:18789
+
+# Check serve status
+tailscale serve status
+
+# Get your Tailscale hostname
+tailscale status | head -1
+
+# Access URL: https://YOUR-HOSTNAME.tail<id>.ts.net/
+```
+
+First-time Control UI setup:
+1. Open the HTTPS URL in browser
+2. Enter gateway token when prompted
+3. Approve browser device when prompted: `docker exec wintermute openclaw devices approve <id>`
+
 ### Container Management
 
 ```bash
@@ -26,29 +46,29 @@ docker exec -w /app wintermute node dist/index.js <command>
 
 ```bash
 # List agents
-docker exec -w /app wintermute node dist/index.js agents list
+docker exec wintermute openclaw agents list
 
 # Add pii-chan agent
-docker exec -w /app wintermute node dist/index.js agents add pii-chan \
+docker exec wintermute openclaw agents add pii-chan \
   --workspace /home/node/.openclaw/pii-chan-workspace
 
 # Remove agent
-docker exec -w /app wintermute node dist/index.js agents remove pii-chan
+docker exec wintermute openclaw agents remove pii-chan
 ```
 
 ### Device Management
 
 ```bash
-# List pending pairing requests
-docker exec -w /app wintermute node dist/index.js devices pending
+# List all devices (paired and pending)
+docker exec wintermute openclaw devices list
 
-# Approve device (if CLI works)
-docker exec -w /app wintermute node dist/index.js devices approve <requestId>
+# Approve device by request ID
+docker exec wintermute openclaw devices approve <requestId>
 
-# View paired devices
+# View paired devices (raw JSON)
 docker exec wintermute cat /home/node/.openclaw/devices/paired.json
 
-# View pending devices
+# View pending devices (raw JSON)
 docker exec wintermute cat /home/node/.openclaw/devices/pending.json
 ```
 
@@ -56,10 +76,10 @@ docker exec wintermute cat /home/node/.openclaw/devices/pending.json
 
 ```bash
 # List connected nodes
-docker exec -w /app wintermute node dist/index.js nodes status
+docker exec wintermute openclaw nodes status
 
 # Invoke command on node
-docker exec -w /app wintermute node dist/index.js nodes invoke \
+docker exec wintermute openclaw nodes invoke \
   --node piichan \
   --command system.run \
   --params '{"command":["echo","hello"]}'

@@ -295,10 +295,50 @@ docker exec -w /app wintermute node dist/index.js nodes status
 
 **Cause:** Control UI requires HTTPS or localhost for security.
 
-**Options:**
-1. Use SSH tunnel: `ssh -L 18789:localhost:18789 user@gateway`
-2. Set up Tailscale Serve for HTTPS
-3. Access from localhost on the gateway machine
+**Fix:** Set up Tailscale Serve (permanent HTTPS):
+
+```bash
+# On gateway
+sudo tailscale serve --bg --https=443 http://localhost:18789
+
+# Access via HTTPS URL
+tailscale status | head -1  # shows your hostname
+# URL: https://YOUR-HOSTNAME.tail<id>.ts.net/
+```
+
+### "origin not allowed"
+
+**Symptom:** HTTPS access works but WebSocket fails with origin error.
+
+**Cause:** Your access URL isn't in `gateway.controlUi.allowedOrigins`.
+
+**Fix:**
+```bash
+# Check current origins
+docker exec wintermute cat /home/node/.openclaw/openclaw.json | grep -A10 "allowedOrigins"
+
+# Add your Tailscale hostname (with https://)
+# Edit ~/.openclaw/openclaw.json on host, add to allowedOrigins array:
+# "https://YOUR-HOSTNAME.tail<id>.ts.net"
+
+# Restart
+cd ~/openclaw && docker compose down && docker compose up -d
+```
+
+### "gateway token missing"
+
+**Symptom:** Control UI loads but won't connect.
+
+**Fix:** Enter the gateway token in the Control UI settings, or append to URL:
+```
+https://YOUR-HOSTNAME.tail<id>.ts.net/?token=YOUR_GATEWAY_TOKEN
+```
+
+Then approve the browser device:
+```bash
+docker exec wintermute openclaw devices list
+docker exec wintermute openclaw devices approve <requestId>
+```
 
 ---
 
