@@ -230,49 +230,103 @@ OpenClaw uses a cryptographic identity system:
 
 ---
 
-## Phase 6: Voice Stack (Optional)
+## Phase 6: Voice Stack
 
-### Install Vosk (Speech-to-Text)
+### Create Python Virtual Environment
+
+Raspberry Pi OS requires a venv for pip packages:
 
 ```bash
-pip3 install vosk
+cd ~/pii-chan
+python3 -m venv venv
+source venv/bin/activate
 
-# Download model (~50MB)
-mkdir -p ~/models
-cd ~/models
+# Install all voice dependencies
+pip install piper-tts vosk openwakeword
+```
+
+**Always activate the venv before running voice scripts:**
+```bash
+source ~/pii-chan/venv/bin/activate
+```
+
+### Download Vosk Model (Speech-to-Text)
+
+```bash
+cd ~/pii-chan
+mkdir -p models && cd models
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
+rm vosk-model-small-en-us-0.15.zip
+cd ..
 ```
 
-### Install Piper (Text-to-Speech)
+### Download Piper Voice (Text-to-Speech)
 
 ```bash
-pip3 install piper-tts
-
-# Download a voice
-mkdir -p ~/piper-voices
-cd ~/piper-voices
+cd ~/pii-chan
+mkdir -p voices && cd voices
 wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
 wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+cd ..
 ```
 
-### Install OpenWakeWord
+### Audio Hardware Setup
 
 ```bash
-pip3 install openwakeword
-python3 -c "import openwakeword; print('OK')"
-```
+# List capture devices (microphones)
+arecord -l
 
-### Audio Setup
+# List playback devices (speakers)
+aplay -l
 
-```bash
-# List audio devices
-arecord -l  # microphones
-aplay -l    # speakers
+# Test recording (3 seconds)
+arecord -D plughw:2,0 -f cd -d 3 test.wav
 
-# Test recording
-arecord -d 3 -f cd test.wav
+# Test playback
 aplay test.wav
+```
+
+**Note:** The USB mic is typically `plughw:2,0`. Adjust based on `arecord -l` output.
+
+### Test TTS (Piper)
+
+```bash
+cd ~/pii-chan
+source venv/bin/activate
+echo "Hello! I am Pii-chan, your car companion." | piper --model voices/en_US-lessac-medium.onnx --output_file hello.wav
+aplay hello.wav  # if speakers connected
+```
+
+### Test STT (Vosk)
+
+```bash
+cd ~/pii-chan
+source venv/bin/activate
+
+# Record 3 seconds
+arecord -D plughw:2,0 -f cd -d 3 test.wav
+
+# Test recognition
+cat > test_vosk.py << 'EOF'
+from vosk import Model, KaldiRecognizer
+import wave, json
+
+model = Model("models/vosk-model-small-en-us-0.15")
+wf = wave.open("test.wav", "rb")
+rec = KaldiRecognizer(model, wf.getframerate())
+
+while True:
+    data = wf.readframes(4000)
+    if len(data) == 0:
+        break
+    rec.AcceptWaveform(data)
+
+result = json.loads(rec.FinalResult())
+print("Recognized:", result.get("text", ""))
+EOF
+
+python test_vosk.py
 ```
 
 ---
