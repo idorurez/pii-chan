@@ -414,7 +414,8 @@ Remote commands from the gateway require an allowlist on the Pi. Edit `~/.opencl
         {"pattern": "/usr/bin/candump"},
         {"pattern": "/usr/bin/cansend"},
         {"pattern": "/usr/sbin/alsactl"},
-        {"pattern": "/home/piichan/.local/bin/*"}
+        {"pattern": "/home/piichan/.local/bin/*"},
+        {"pattern": "/home/piichan/pii-chan/speak.sh"}
       ]
     }
   }
