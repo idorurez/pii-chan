@@ -6,7 +6,7 @@ Pii-chan runs as a **separate agent** on your existing OpenClaw gateway, with th
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    AWS Gateway                               │
+│                    AWS Gateway (Docker)                      │
 │  ┌─────────────────────┐  ┌─────────────────────────────┐   │
 │  │   Wintermute Agent  │  │     Pii-chan Agent          │   │
 │  │   (main workspace)  │  │   (pii-chan-workspace)      │   │
@@ -16,7 +16,7 @@ Pii-chan runs as a **separate agent** on your existing OpenClaw gateway, with th
 │  │   Discord/etc       │  │   Voice from car node       │   │
 │  └─────────────────────┘  └─────────────────────────────┘   │
 │                                    ▲                         │
-│                                    │ WebSocket               │
+│                                    │ WebSocket (Tailscale)   │
 └────────────────────────────────────┼─────────────────────────┘
                                      │
                           ┌──────────┴──────────┐
@@ -31,11 +31,92 @@ Pii-chan runs as a **separate agent** on your existing OpenClaw gateway, with th
 
 ---
 
-## Docker Deployment (Recommended)
+## Prerequisites
 
-If you run OpenClaw via Docker Compose, follow these steps. Everything lives under `~/.openclaw/` which is already mounted — **survives restarts, rebuilds, and recompose**.
+- AWS instance (or any Linux server) running Docker
+- Tailscale installed on both gateway and Pi nodes
+- Domain or stable IP for Discord/webhook callbacks
 
-### Step 1: Create Pii-chan Workspace on Host
+---
+
+## Step 1: Tailscale on Gateway
+
+Install Tailscale for secure node connectivity:
+
+```bash
+# Install Tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+
+# Authenticate
+sudo tailscale up
+
+# Get your Tailscale IP (nodes will connect to this)
+tailscale ip -4
+# Example: 100.112.61.98
+```
+
+---
+
+## Step 2: Configure Gateway for Node Connections
+
+Your `docker-compose.yml` should use `network_mode: host` to expose the gateway port on Tailscale:
+
+```yaml
+version: '3.8'
+services:
+  wintermute:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: wintermute
+    network_mode: host  # Required for Tailscale connectivity
+    restart: unless-stopped
+    volumes:
+      - ${OPENCLAW_CONFIG_DIR:-~/.openclaw}:/home/node/.openclaw
+      - ~/.ssh:/home/node/.ssh:ro
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      # Add other API keys as needed
+```
+
+---
+
+## Step 3: Generate Gateway Auth Token
+
+Create a shared token for node authentication:
+
+```bash
+# Generate a secure random token
+openssl rand -hex 16
+# Example output: 69d05e0c49fa731be1ebcb8ed9812305
+```
+
+Add to your gateway config (`~/.openclaw/openclaw.json`):
+
+```json
+{
+  "gateway": {
+    "bind": "tailnet",
+    "port": 18789,
+    "auth": {
+      "token": "69d05e0c49fa731be1ebcb8ed9812305"
+    },
+    "remote": {
+      "token": "69d05e0c49fa731be1ebcb8ed9812305"
+    }
+  }
+}
+```
+
+**Important:** Both `auth.token` and `remote.token` must match. The `remote.token` is used by CLI commands; if it's missing, CLI commands will fail with "gateway token mismatch".
+
+Restart the gateway:
+```bash
+docker compose down && docker compose up -d
+```
+
+---
+
+## Step 4: Create Pii-chan Workspace
 
 ```bash
 # On the gateway HOST (not inside container)
@@ -45,125 +126,116 @@ mkdir -p ~/.openclaw/pii-chan-workspace
 git clone https://github.com/idorurez/pii-chan.git /tmp/pii-chan
 cp /tmp/pii-chan/workspace-template/* ~/.openclaw/pii-chan-workspace/
 
+# Fix permissions (container runs as uid 1000)
+sudo chown -R 1000:1000 ~/.openclaw/pii-chan-workspace/
+
 # Verify
 ls ~/.openclaw/pii-chan-workspace/
 # Should show: AGENTS.md  HEARTBEAT.md  IDENTITY.md  MEMORY.md  SOUL.md  USER.md
 ```
 
-### Step 2: Register Pii-chan Agent
+---
+
+## Step 5: Register Pii-chan Agent
 
 ```bash
-# Run inside container (replace 'wintermute' with your container name if different)
-# Note: Docker image uses node directly, not the openclaw CLI wrapper
-docker exec -w /app wintermute node dist/index.js agents add pii-chan --workspace /home/node/.openclaw/pii-chan-workspace
+# Inside container
+docker exec -w /app wintermute node dist/index.js agents add pii-chan \
+  --workspace /home/node/.openclaw/pii-chan-workspace
 ```
 
-**If you get permission errors:** Fix ownership on host:
-```bash
-sudo chown -R 1000:1000 ~/.openclaw/pii-chan-workspace/
-```
-
-This writes to `~/.openclaw/openclaw.json` on the host, so it persists.
-
-### Step 3: Verify Agent Exists
-
+Verify:
 ```bash
 docker exec -w /app wintermute node dist/index.js agents list
-# Should show both: main (default) and pii-chan
-```
-
-### Step 4: Install Pii-chan Skill
-
-```bash
-# On host — copy skill to the config dir
-cp -r /tmp/pii-chan/skills/car-control ~/.openclaw/skills/
-
-# Clean up
-rm -rf /tmp/pii-chan
+# Should show: main (default), pii-chan
 ```
 
 ---
 
-## Native Deployment
-
-If you run OpenClaw natively (not Docker):
-
-### Step 1: Create Pii-chan Agent
+## Step 6: Install Pii-chan Skill (Optional)
 
 ```bash
-openclaw agents add pii-chan --workspace ~/.openclaw/pii-chan-workspace
-```
-
-### Step 2: Set Up Workspace
-
-```bash
-git clone https://github.com/idorurez/pii-chan.git /tmp/pii-chan
-cp /tmp/pii-chan/workspace-template/* ~/.openclaw/pii-chan-workspace/
 cp -r /tmp/pii-chan/skills/car-control ~/.openclaw/skills/
 rm -rf /tmp/pii-chan
 ```
 
 ---
 
-## Pi Node Setup
+## Device Files
 
-On the Raspberry Pi:
+OpenClaw stores device pairing state in:
 
-```bash
-# Install OpenClaw
-curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
-
-# Configure as node pointing to gateway
-openclaw onboard --node
-
-# When prompted:
-# - Gateway URL: wss://your-gateway-ip:18789
-# - Approve pairing request on gateway
+```
+~/.openclaw/devices/
+├── pending.json   # Unapproved pairing requests
+└── paired.json    # Approved devices with tokens
 ```
 
-### Approve on Gateway
+These are JSON objects keyed by `deviceId`:
 
-```bash
-# Docker
-docker exec -w /app wintermute node dist/index.js nodes pending
-docker exec -w /app wintermute node dist/index.js nodes approve <requestId>
+**pending.json:**
+```json
+{
+  "request-uuid": {
+    "requestId": "request-uuid",
+    "deviceId": "sha256-hash-of-public-key",
+    "publicKey": "base64-ed25519-public-key",
+    "displayName": "piichan",
+    "role": "node",
+    ...
+  }
+}
+```
 
-# Native
-openclaw nodes pending
-openclaw nodes approve <requestId>
+**paired.json:**
+```json
+{
+  "sha256-hash-of-public-key": {
+    "deviceId": "sha256-hash-of-public-key",
+    "publicKey": "base64-ed25519-public-key",
+    "displayName": "piichan",
+    ...
+    "tokens": {
+      "node": {
+        "token": "session-token-issued-by-gateway",
+        "createdAtMs": 1773028911447
+      }
+    }
+  }
+}
 ```
 
 ---
 
-## Configure Node → Agent Routing
+## Approving Node Pairing
 
-On the gateway, configure the Pi node to route to the pii-chan agent:
+### Option A: CLI (If Working)
 
 ```bash
-# Get node ID
-docker exec -w /app wintermute node dist/index.js nodes status
+# List pending requests
+docker exec -w /app wintermute node dist/index.js devices pending
 
-# Configure routing (exact method TBD based on OpenClaw version)
-# Option A: Per-node agent binding
-docker exec -w /app wintermute node dist/index.js config set nodes.<node-id>.agent pii-chan
+# Approve by request ID
+docker exec -w /app wintermute node dist/index.js devices approve REQUEST_ID
 ```
+
+### Option B: Manual (If CLI Has Auth Issues)
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md#manual-device-approval) for manual approval steps.
 
 ---
 
-## Verification
+## Verifying Node Connection
 
 ```bash
-# Docker commands (replace with just 'openclaw ...' for native installs)
+# Check paired devices have tokens
+docker exec wintermute cat /home/node/.openclaw/devices/paired.json
 
-# Check node is connected
-docker exec -w /app wintermute node dist/index.js nodes status
-
-# Check agents exist
-docker exec -w /app wintermute node dist/index.js agents list
-
-# Test node invocation
-docker exec -w /app wintermute node dist/index.js nodes invoke --node piichan --command system.run --params '{"command":["echo","hello"]}'
+# Look for recent connections from Pi IP
+docker logs wintermute --tail 100 | grep "100.76.12.120"
 ```
+
+**Note:** The gateway doesn't log successful node connections — only failures. The absence of errors is good news.
 
 ---
 
@@ -175,7 +247,8 @@ docker exec -w /app wintermute node dist/index.js nodes invoke --node piichan --
 | Pii-chan workspace | `~/.openclaw/pii-chan-workspace/` | ✅ Yes |
 | Pii-chan memories | `~/.openclaw/pii-chan-workspace/MEMORY.md` | ✅ Yes |
 | Skills | `~/.openclaw/skills/` | ✅ Yes |
-| Node pairing | `~/.openclaw/` (state files) | ✅ Yes |
+| Device pairing | `~/.openclaw/devices/` | ✅ Yes |
+| Gateway identity | `~/.openclaw/identity/` | ✅ Yes |
 
 **No changes to `docker-compose.yml` needed** — everything is under the already-mounted `${OPENCLAW_CONFIG_DIR}`.
 
@@ -192,3 +265,26 @@ docker exec -w /app wintermute node dist/index.js nodes invoke --node piichan --
 | Tools | All | Car-specific + basics |
 
 They share the same gateway infrastructure but are completely isolated in personality, memory, and context.
+
+---
+
+## Troubleshooting
+
+### CLI "gateway token mismatch" Error
+
+The CLI can't authenticate. Ensure both `gateway.auth.token` and `gateway.remote.token` are set and match in `openclaw.json`.
+
+### Control UI "requires device identity"
+
+Browser access requires HTTPS or localhost. Options:
+- SSH tunnel: `ssh -L 18789:localhost:18789 user@gateway`
+- Tailscale Serve (for HTTPS)
+- Access from gateway machine directly
+
+### Node Won't Pair
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed pairing issues.
+
+---
+
+*Next: Set up the Pi node — see [PI_SETUP.md](./PI_SETUP.md)*
