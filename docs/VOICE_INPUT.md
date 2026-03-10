@@ -1,315 +1,140 @@
 # Voice Input Guide
 
-This guide covers setting up voice input for Pii-chan — talking to your car AI instead of typing.
+Voice input for Pii-chan: wake word detection → speech recording → STT transcription.
 
-## Quick Start (Push-to-Talk with Vosk)
+## Current Stack (Working on Pi 5)
+
+```
+┌─────────────────┐     ┌──────────────┐     ┌───────────────┐     ┌──────────┐
+│  OpenWakeWord   │────▶│   Record     │────▶│    Vosk       │────▶│  Brain   │
+│  (hey_jarvis)   │     │  until       │     │    STT        │     │  + TTS   │
+│  always on      │     │  silence     │     │  transcribe   │     │  respond │
+└─────────────────┘     └──────────────┘     └───────────────┘     └──────────┘
+```
+
+**Latency:** ~200ms wake detection + ~500ms STT + ~1-2s LLM = ~2-3s total
+
+## Setup
+
+### Dependencies
 
 ```bash
-# Install dependencies
-pip install vosk sounddevice numpy
+source venv/bin/activate
+pip install vosk sounddevice numpy openwakeword
+```
 
-# Download English model (~50MB)
+### Vosk Model (~50MB)
+
+```bash
 mkdir -p models
 cd models
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
 cd ..
-
-# Test it
-python -c "from src.voice_input import listen; print(listen())"
 ```
 
-## STT Engine Options
+### USB Audio Devices
 
-### 1. Vosk (Recommended for Pi)
-
-**Pros:** Lightweight, offline, real-time capable, free
-**Cons:** Accuracy not as good as Whisper
-
-| Model | Size | Quality | Speed on Pi 5 |
-|-------|------|---------|---------------|
-| vosk-model-small-en-us | 50MB | Good | Real-time ✓ |
-| vosk-model-en-us | 1.8GB | Better | Near real-time |
-
-**Install:**
-```bash
-pip install vosk
-```
-
-**Models:** https://alphacephei.com/vosk/models
-
----
-
-### 2. Whisper.cpp (Better Quality)
-
-OpenAI's Whisper ported to C++ for efficiency. Better accuracy than Vosk but slower.
-
-| Model | Size | Quality | Speed on Pi 5 |
-|-------|------|---------|---------------|
-| tiny | 75MB | Good | ~2-3s per 5s audio |
-| base | 150MB | Better | ~5-6s per 5s audio |
-| small | 500MB | Great | ~15-20s (too slow) |
-
-**Install:**
-```bash
-# Build whisper.cpp
-git clone https://github.com/ggerganov/whisper.cpp
-cd whisper.cpp
-make
-
-# Download model
-./models/download-ggml-model.sh tiny.en
-```
-
-**Python binding:**
-```bash
-pip install pywhispercpp
-```
-
----
-
-### 3. Whisper API (Cloud, Best Quality)
-
-Use OpenAI's Whisper API for best accuracy. Requires internet.
-
-**Cost:** ~$0.006 per minute
-**Latency:** ~1-2s for short clips
-
-```python
-import openai
-
-def transcribe_with_whisper_api(audio_file):
-    with open(audio_file, "rb") as f:
-        result = openai.Audio.transcribe("whisper-1", f)
-    return result["text"]
-```
-
----
-
-### 4. Google Cloud Speech-to-Text
-
-Very accurate, requires internet and Google Cloud account.
+Check device indices:
 
 ```bash
-pip install google-cloud-speech
+python3 -c "import sounddevice; print(sounddevice.query_devices())"
 ```
 
----
+On our Pi 5 setup:
+- Device 0: USB PnP Sound Device (mic only, 44100Hz native)
+- Device 1: USB PnP Audio Device (mic + speaker output)
 
-## Wake Word Options
+Configure in `config.yaml`:
 
-For hands-free activation ("Hey Pii-chan"), you need wake word detection.
+```yaml
+audio:
+  input_device: 0   # mic
+  output_device: 1  # speaker
+```
 
-### 1. Porcupine (Recommended)
+## Configuration
 
-**Pros:** Very lightweight, custom wake words, great accuracy
-**Cons:** Free tier limited to 3 custom words
+```yaml
+voice_input:
+  enabled: true
+  vosk_model_path: ./models/vosk-model-small-en-us-0.15
+  wake_word: hey_jarvis
+  wake_word_threshold: 0.5
+  max_record_seconds: 7.0
+  silence_threshold: 0.20    # above mic noise floor (~0.10 RMS)
+  silence_duration: 1.5      # seconds of silence to stop recording
+```
+
+## Running
+
+### Full Voice Loop (default)
 
 ```bash
-pip install pvporcupine
+source venv/bin/activate
+python -m src.main
 ```
 
-**Get free API key:** https://picovoice.ai/
+Say "hey Jarvis" → speak your question → Pii-chan responds via TTS.
 
-```python
-import pvporcupine
-
-porcupine = pvporcupine.create(
-    access_key="YOUR_KEY",
-    keywords=["porcupine"],  # Built-in, or use custom
-)
-```
-
-**Custom wake word:**
-1. Go to https://console.picovoice.ai/
-2. Create custom wake word "Pii-chan"
-3. Download and use in your code
-
----
-
-### 2. OpenWakeWord (Open Source)
-
-**Pros:** Free, open source, trainable
-**Cons:** Larger, newer project
+### Text Mode with Push-to-Talk
 
 ```bash
-pip install openwakeword
+python -m src.main --simulate
+# Type "voice" to record once without wake word
 ```
 
-```python
-from openwakeword import Model
+### Disable Voice Input
 
-model = Model(wakeword_models=["hey_jarvis"])
-
-# Process audio frames
-prediction = model.predict(audio_frame)
-if prediction["hey_jarvis"] > 0.5:
-    print("Wake word detected!")
+```bash
+python -m src.main --no-mic    # passive mode, no wake word/STT
 ```
 
-**Train custom wake word:**
-https://github.com/dscripka/openWakeWord#training-new-models
+## Technical Details
 
----
+### Audio Resampling
 
-### 3. Vosk Keyword Spotting
+The USB mic runs at 44100Hz natively. OpenWakeWord and Vosk need 16kHz.
+We use fast linear interpolation (`np.interp`) instead of `scipy.signal.resample`
+which was ~100x too slow for real-time processing.
 
-Vosk can also do keyword spotting (less accurate than Porcupine).
+### OpenWakeWord Chunk Size
 
-```python
-from vosk import Model, KaldiRecognizer
+OWW expects 1280 samples at 16kHz (80ms). At 44100Hz native rate, that's
+`int(1280 * 44100 / 16000)` = 3528 samples per chunk.
 
-model = Model("model-path")
-rec = KaldiRecognizer(model, 16000, '["pii chan", "[unk]"]')
+### Silence Detection
 
-# Process audio, check for keyword
-if rec.AcceptWaveform(data):
-    result = json.loads(rec.Result())
-    if "pii chan" in result.get("text", ""):
-        print("Wake word detected!")
-```
+USB mic noise floor is ~0.10 RMS. Voice is ~0.30+ RMS.
+Threshold set to 0.20 to distinguish speech from background noise.
 
----
+### Queue-Based Architecture
 
-## Architecture Recommendations
-
-### For Raspberry Pi 5 (Resource Constrained)
-
-```
-┌─────────────────┐     ┌──────────────┐     ┌───────────────┐
-│   Porcupine     │────▶│    Vosk      │────▶│   Qwen 1.5B   │
-│  (wake word)    │     │   (STT)      │     │    (LLM)      │
-│   ~2MB, <1%CPU  │     │  ~50MB, 10%  │     │  ~1GB, 100%   │
-└─────────────────┘     └──────────────┘     └───────────────┘
-        │                      │                     │
-   Always on              On wake only          On command only
-```
-
-**Total voice pipeline:** ~150ms wake detection + ~500ms STT + ~1-2s LLM = ~2-3s total
-
----
-
-### For Desktop/Laptop (More Resources)
-
-```
-┌─────────────────┐     ┌──────────────┐     ┌───────────────┐
-│   Porcupine     │────▶│ Whisper.cpp  │────▶│   Qwen 3B     │
-│  (wake word)    │     │   (base)     │     │    (LLM)      │
-└─────────────────┘     └──────────────┘     └───────────────┘
-```
-
----
-
-### With Internet (Best Quality)
-
-```
-┌─────────────────┐     ┌──────────────┐     ┌───────────────┐
-│   Porcupine     │────▶│ Whisper API  │────▶│  Local LLM    │
-│  (local)        │     │   (cloud)    │     │               │
-└─────────────────┘     └──────────────┘     └───────────────┘
-```
-
----
-
-## Integration with Pii-chan
-
-### Option 1: Push-to-Talk Command
-
-Add to `main.py` text mode:
-
-```python
-elif verb == "voice":
-    from .voice_input import VoiceInput
-    vi = VoiceInput()
-    text = vi.listen()
-    if text:
-        response = brain.chat(text, can.state)
-        voice.speak(response)
-```
-
-### Option 2: Hardware Button
-
-Connect a button to GPIO (Pi) and trigger recording:
-
-```python
-import RPi.GPIO as GPIO
-
-BUTTON_PIN = 17
-
-GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-def on_button_press(channel):
-    text = voice_input.listen()
-    response = brain.chat(text, can.state)
-    voice.speak(response)
-
-GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=on_button_press)
-```
-
-### Option 3: Wake Word Loop
-
-```python
-def voice_loop():
-    porcupine = create_porcupine("pii-chan")
-    voice_input = VoiceInput()
-    
-    while running:
-        if detect_wake_word(porcupine):
-            voice.speak("Yes?")
-            text = voice_input.listen()
-            response = brain.chat(text, can.state)
-            voice.speak(response)
-```
-
----
+Audio callback pushes chunks to a `queue.Queue(maxsize=200)` using `put_nowait`
+to prevent blocking the audio thread. Dropped frames are preferred over blocking.
 
 ## Troubleshooting
 
+### Wake word not detecting
+- Check mic is working: `arecord -D hw:2,0 -r 44100 -f S16_LE -c 1 -d 3 /tmp/test.wav`
+- Verify wake word model exists: `python -c "from openwakeword.model import Model; m=Model(); print(list(m.models.keys()))"`
+- Try lowering `wake_word_threshold` (default 0.5)
+
+### "Didn't catch that" after wake word
+- Increase `silence_threshold` above your mic's noise floor
+- Increase `max_record_seconds` for longer utterances
+- Check mic RMS: `python -c "import sounddevice as sd; import numpy as np; d=sd.rec(16000, samplerate=16000, channels=1, device=0); sd.wait(); print(f'RMS: {np.sqrt(np.mean(d**2)):.4f}')"`
+
+### Audio overflow / choppy detection
+- Ensure using `np.interp` resampling (not scipy)
+- Check CPU usage — OpenWakeWord + Vosk should be <30% on Pi 5
+
 ### No audio input detected
 ```bash
-# List audio devices
-python -c "import sounddevice; print(sounddevice.query_devices())"
+# List ALSA devices
+arecord -l
 
-# Set default device
-export SD_DEVICE=1  # Use device index from above
+# Test recording
+arecord -D hw:2,0 -r 44100 -f S16_LE -c 1 -d 3 /tmp/test.wav
+aplay -D hw:3,0 /tmp/test.wav
 ```
-
-### Vosk model not loading
-- Ensure model is unzipped (should be a directory, not .zip)
-- Check path in config
-
-### Poor transcription quality
-- Speak clearly, reduce background noise
-- Try a larger Vosk model
-- Consider Whisper.cpp for better accuracy
-
-### High latency
-- Use smaller models
-- Reduce max recording time
-- Consider wake word to avoid processing silence
-
----
-
-## Hardware Recommendations
-
-### Microphone for Car
-- **USB:** Blue Snowball iCE (~$50) — good quality
-- **I2S:** INMP441 (~$5) — connects directly to Pi GPIO
-- **USB Array:** ReSpeaker USB (~$80) — beam forming, better in noise
-
-### For Pi Setup
-```
-Pi 5 ─── USB Mic ─── INMP441
-  │
-  └─── I2S DAC ─── Speaker (for VOICEVOX output)
-```
-
----
-
-## Performance Tips
-
-1. **Load models once** at startup, not per request
-2. **Use wake word** to avoid processing silence
-3. **Silence detection** to stop recording early
-4. **Async processing** — start STT while LLM might still be loaded
-5. **Consider streaming** — Vosk supports streaming for lower latency

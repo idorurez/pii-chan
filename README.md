@@ -48,14 +48,14 @@ Not another car chatbot. Pii-chan is:
 
 ## Hardware (~$200)
 
-| Component | Purpose |
-|-----------|---------|
-| Raspberry Pi 5 8GB | Compute |
-| Waveshare 2-CH CAN HAT | CAN bus |
-| HyperPixel 4.0 | Display |
-| USB Microphone | Voice input |
-| MAX98357A + Speaker | Voice output |
-| 12V→5V 5A Converter | Power |
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| Raspberry Pi 5 8GB | Compute | Working |
+| USB PnP Sound Device | Microphone input | Working |
+| USB PnP Audio Device | Speaker output | Working |
+| Waveshare 2-CH CAN HAT | CAN bus | Pending |
+| HyperPixel 4.0 | Display | Pending |
+| 12V→5V 5A Converter | Power | Pending |
 
 ## Architecture
 
@@ -91,32 +91,36 @@ Not another car chatbot. Pii-chan is:
 pii-chan/
 ├── PRODUCT.md              # Product spec (start here)
 ├── README.md               # This file
+├── config.example.yaml     # Example configuration
 ├── src/                    # Source code
-│   ├── node.py             # OpenClaw node integration
-│   ├── main.py             # Entry point
+│   ├── main.py             # Entry point (voice mode, text mode, simulator)
+│   ├── brain.py            # AI brain (LLM + rule-based)
+│   ├── voice.py            # TTS output (Piper + VOICEVOX, auto-detect)
+│   ├── voice_input.py      # Wake word + STT input
 │   ├── can_reader.py       # CAN bus reading
-│   └── voice.py            # TTS
-├── skills/
-│   └── car-control/        # OpenClaw skill for car commands
-├── workspace-template/     # Pii-chan agent workspace files
-│   ├── SOUL.md             # Personality definition
-│   ├── IDENTITY.md         # Name, emoji, vibe
-│   ├── AGENTS.md           # Operating instructions
-│   ├── USER.md             # Driver profile template
-│   ├── MEMORY.md           # Long-term memory
-│   └── HEARTBEAT.md        # Periodic check config
+│   ├── config.py           # Configuration dataclasses
+│   ├── memory.py           # Session memory (SQLite)
+│   └── node.py             # OpenClaw node integration
+├── models/                 # Downloaded models (not in git)
+│   ├── vosk-model-small-en-us-0.15/
+│   └── voicevox/           # VOICEVOX Core files
+├── voices/                 # Piper TTS voice models
 ├── data/
-│   ├── personality.md      # Personality reference (legacy)
+│   ├── personality.md      # Personality definition
 │   └── toyota_sienna.dbc   # CAN message definitions
-└── docs/
-    ├── GATEWAY_SETUP.md    # Agent + node deployment
-    ├── DEPLOYMENT_PLAN.md  # Technical details
-    └── CAN_SNIFFING_GUIDE.md
+├── docs/
+│   ├── VOICE_INPUT.md      # Voice input setup + troubleshooting
+│   ├── VOICEVOX_SETUP.md   # Japanese TTS setup
+│   ├── MODEL_SETUP.md      # LLM model setup
+│   ├── PI_SETUP.md         # Raspberry Pi setup
+│   ├── GATEWAY_SETUP.md    # OpenClaw gateway setup
+│   └── CAN_SNIFFING_GUIDE.md
+└── workspace-template/     # Pii-chan agent workspace files
 ```
 
 ## Status
 
-🔄 **Node connected! Entering voice/display phase**
+🔄 **Voice loop working! Next: VOICEVOX Core integration + display**
 
 - [x] Product spec defined
 - [x] Architecture designed
@@ -125,10 +129,15 @@ pii-chan/
 - [x] Raspberry Pi node connected to gateway
 - [x] Systemd service with auto-reconnect
 - [x] Comprehensive troubleshooting docs
-- [ ] Hardware acquired (Pi 5, CAN HAT, display)
-- [ ] Voice I/O working (Vosk, Piper, OpenWakeWord)
+- [x] Hardware: Pi 5 + USB soundcard (mic + speaker)
+- [x] Wake word detection (OpenWakeWord, "hey Jarvis")
+- [x] Speech-to-text (Vosk, offline)
+- [x] English TTS (Piper, local)
+- [x] Full voice loop: wake word → STT → brain → TTS
+- [x] Auto-detect dual TTS engine (English → Piper, Japanese → VOICEVOX)
+- [ ] Japanese TTS (VOICEVOX Core local synthesis — in progress)
 - [ ] Display + face
-- [ ] CAN reading integrated
+- [ ] CAN reading with real hardware
 - [ ] Daily driver testing
 
 ## Quick Links

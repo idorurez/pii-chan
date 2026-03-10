@@ -2,7 +2,81 @@
 
 VOICEVOX is a free, open-source Japanese text-to-speech engine with cute anime-style voices. Perfect for Pii-chan!
 
-## Installation
+Pii-chan supports two modes:
+- **VOICEVOX Core** (local Python bindings) — recommended for Raspberry Pi, no server needed
+- **VOICEVOX Engine** (HTTP API) — requires running VOICEVOX server
+
+## Option 1: VOICEVOX Core (Recommended for Pi)
+
+Local Python bindings — no server process needed, lower latency.
+
+### Install Python package
+
+```bash
+source venv/bin/activate
+
+# For Raspberry Pi 5 (aarch64, Python 3.11+)
+pip install https://github.com/VOICEVOX/voicevox_core/releases/download/0.16.4/voicevox_core-0.16.4-cp310-abi3-manylinux_2_34_aarch64.whl
+
+# For x86_64 Linux
+pip install voicevox-core==0.16.4
+```
+
+### Download required files
+
+```bash
+mkdir -p models/voicevox/voicevox_core/{dict,models/vvms,onnxruntime/lib}
+
+# 1. OpenJTalk dictionary (required for text processing)
+cd models/voicevox/voicevox_core/dict
+wget https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz
+tar xzf open_jtalk_dic_utf_8-1.11.tar.gz
+rm open_jtalk_dic_utf_8-1.11.tar.gz
+cd ../../../..
+
+# 2. ONNX Runtime library (required by voicevox_core)
+cd models/voicevox/voicevox_core/onnxruntime/lib
+wget https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.17.3/voicevox-onnxruntime-linux-arm64-cpu-1.17.3.tgz
+tar xzf voicevox-onnxruntime-linux-arm64-cpu-1.17.3.tgz --strip-components=1
+rm voicevox-onnxruntime-linux-arm64-cpu-1.17.3.tgz
+cd ../../../../..
+
+# 3. Voice model files (.vvm)
+cd models/voicevox/voicevox_core/models/vvms
+# Download from VOICEVOX releases — each .vvm contains one or more characters
+# See https://github.com/VOICEVOX/voicevox_core/releases for model downloads
+cd ../../../../..
+```
+
+### Test VOICEVOX Core
+
+```bash
+source venv/bin/activate
+python3 -c "
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from pathlib import Path
+
+ort = Onnxruntime.load_once(
+    filename='./models/voicevox/voicevox_core/onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3'
+)
+jtalk = OpenJtalk('./models/voicevox/voicevox_core/dict/open_jtalk_dic_utf_8-1.11')
+synth = Synthesizer(ort, jtalk)
+
+# Load a voice model
+for vvm in Path('./models/voicevox/voicevox_core/models/vvms').glob('*.vvm'):
+    model = VoiceModelFile.open(vvm)
+    synth.load_voice_model(model)
+
+# Synthesize (style_id=3 = ずんだもん ノーマル)
+wav = synth.tts('こんにちは！ピーちゃんです！', style_id=3)
+with open('/tmp/voicevox_test.wav', 'wb') as f:
+    f.write(wav)
+print('Saved to /tmp/voicevox_test.wav')
+"
+aplay /tmp/voicevox_test.wav
+```
+
+## Option 2: VOICEVOX Engine (HTTP API)
 
 ### macOS / Windows
 
@@ -10,27 +84,10 @@ VOICEVOX is a free, open-source Japanese text-to-speech engine with cute anime-s
 2. Install and run VOICEVOX
 3. It starts a local server on port 50021
 
-### Linux (including Raspberry Pi)
+### Linux
 
 ```bash
-# Download VOICEVOX Core
-# Check https://github.com/VOICEVOX/voicevox_core for latest release
-
-# For x86_64:
-wget https://github.com/VOICEVOX/voicevox_core/releases/download/0.15.0/voicevox_core-linux-x64-cpu-0.15.0.zip
-
-# For Raspberry Pi (ARM):
-wget https://github.com/VOICEVOX/voicevox_core/releases/download/0.15.0/voicevox_core-linux-arm64-cpu-0.15.0.zip
-
-# Unzip and run
-unzip voicevox_core-*.zip
-cd voicevox_core-*
-./run --host 0.0.0.0 --port 50021
-```
-
-### Docker
-
-```bash
+# Docker (easiest)
 docker run -p 50021:50021 voicevox/voicevox_engine:cpu-latest
 ```
 
@@ -73,24 +130,40 @@ In `config.yaml`:
 
 ```yaml
 voice:
-  engine: voicevox
-  voicevox_url: http://localhost:50021
-  speaker_id: 3  # ずんだもん
-  speed: 1.1     # Slightly faster
+  # "auto" = auto-detect language per utterance
+  # Japanese text → VOICEVOX, English text → Piper
+  engine: auto
+  piper_model: ./voices/en_US-lessac-medium.onnx
+  speaker_id: 3  # ずんだもん ノーマル
+  speed: 1.1
+  volume: 0.3
 ```
+
+## Auto-Detect Dual Engine Mode
+
+When `engine: auto`, Pii-chan automatically routes each utterance:
+- **Japanese/CJK text** → VOICEVOX (if available, else falls back to Piper with substitutions)
+- **English text** → Piper TTS
+
+Known substitutions:
+- `ピーちゃん` → "Pee-chan" (for Piper)
+- "Pii-chan" / "Pee-chan" → `ピーちゃん` (for VOICEVOX)
 
 ## Troubleshooting
 
-### VOICEVOX not responding
-- Check if the process is running
+### VOICEVOX Core: ImportError or library not found
+- Ensure ONNX runtime .so file exists and path is correct
+- On Pi: the wheel is `cp310-abi3` — works with Python 3.10+
+
+### VOICEVOX Engine: not responding
+- Check if the process/container is running
 - Verify port 50021 is not blocked
 - Try `curl http://localhost:50021/speakers`
 
 ### Audio not playing
 - Check `sounddevice` is installed: `pip install sounddevice`
-- On Linux, ensure ALSA or PulseAudio is working
-- Try: `python -c "import sounddevice; print(sounddevice.query_devices())"`
+- Verify output device index: `python -c "import sounddevice; print(sounddevice.query_devices())"`
+- Test speaker: `speaker-test -D hw:3,0 -c 1 -t wav`
 
-### No voice in car (Raspberry Pi)
-- Connect speaker to 3.5mm jack or I2S DAC
-- Test with: `speaker-test -c 2 -t wav`
+### Volume too loud/quiet
+- Adjust `volume` in config.yaml (0.0 - 1.0, default 0.3)
