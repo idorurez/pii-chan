@@ -6,19 +6,18 @@ from .config import Config
 from .can_reader import CANReader, CarState, Gear
 from .can_writer import CANWriter, ClimateState
 from .brain import PiiBrain
-from .voice import Voice, VoiceConfig
+from .voice import Voice
 from .memory import SessionMemory
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "Config",
-    "CANReader", 
+    "CANReader",
     "CarState",
     "Gear",
     "CANWriter",
     "ClimateState",
     "PiiBrain",
     "Voice",
-    "VoiceConfig", 
     "SessionMemory",
 ]

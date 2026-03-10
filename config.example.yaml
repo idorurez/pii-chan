@@ -1,78 +1,60 @@
-# ピーちゃん Configuration
+# Pii-chan Configuration
 # Copy to config.yaml and adjust as needed
 
 llm:
-  # Path to GGUF model file
-  # Recommended: Qwen 2.5 1.5B Instruct Q4_K_M
-  # Download from: https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
   model_path: ./models/qwen2.5-1.5b-instruct-q4_k_m.gguf
-  
-  # Context window size (tokens)
   context_size: 4096
-  
-  # Max tokens to generate per response
   max_tokens: 100
-  
-  # Temperature (0.0-1.0, higher = more creative)
   temperature: 0.8
-  
-  # Top-p sampling
   top_p: 0.9
 
 voice:
-  # TTS engine: "voicevox" or "mock"
-  engine: mock
-  
-  # VOICEVOX server URL (if using voicevox)
+  # TTS engine: "piper", "voicevox", or "mock"
+  engine: piper
+  # Piper voice model path
+  piper_model: ./voices/en_US-lessac-medium.onnx
+  # VOICEVOX settings (if using voicevox)
   voicevox_url: http://localhost:50021
-  
-  # VOICEVOX speaker ID
-  # 0=四国めたん(あまあま), 1=ずんだもん(あまあま), 2=四国めたん(ノーマル)
-  # 3=ずんだもん(ノーマル), 8=春日部つむぎ, 10=雨晴はう
   speaker_id: 3
-  
-  # Speech speed multiplier
   speed: 1.1
+  # Volume: 0.0 (silent) to 1.0 (full). Default: 0.3
+  volume: 0.3
+
+voice_input:
+  enabled: true
+  stt_engine: vosk
+  vosk_model_path: ./models/vosk-model-small-en-us-0.15
+  wake_word_engine: openwakeword
+  # Available wake words: hey_jarvis, alexa, etc.
+  wake_word: hey_jarvis
+  wake_word_threshold: 0.5
+  max_record_seconds: 5.0
+  silence_threshold: 0.01
+  silence_duration: 1.0
+
+audio:
+  # sounddevice device indices (run: python -c "import sounddevice; print(sounddevice.query_devices())")
+  # null = use system default
+  input_device: null   # mic index
+  output_device: null  # speaker index
 
 can:
-  # CAN interface: "socketcan" or "mock"
   interface: mock
-  
-  # SocketCAN channel (for real hardware)
   channel: can0
-  
-  # DBC file for message decoding
   dbc_path: ./data/toyota_sienna.dbc
-  
-  # CAN bus bitrate
   bitrate: 500000
 
 display:
-  # Enable display output
   enabled: true
-  
-  # Window size
   width: 800
   height: 480
-  
-  # Fullscreen mode
   fullscreen: false
-  
-  # Target FPS
   fps: 30
 
 brain:
-  # How often to consider speaking (seconds)
   think_interval: 3.0
-  
-  # Minimum seconds between speeches
   speech_cooldown: 30.0
-  
-  # Recent events window (seconds)
   recent_events_window: 300
-  
-  # Personality definition file
   personality_path: ./data/personality.md
 
-# Database path for session history
 db_path: ./data/sessions.db
