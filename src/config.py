@@ -20,8 +20,7 @@ class VoiceOutputConfig:
     # Piper settings
     piper_model: str = "./voices/en_US-lessac-medium.onnx"
     # VOICEVOX settings
-    voicevox_url: str = "http://localhost:50021"
-    speaker_id: int = 1  # VOICEVOX character ID
+    speaker_id: int = 3  # ずんだもん ノーマル
     speed: float = 1.1
     volume: float = 0.3  # 0.0 - 1.0
 

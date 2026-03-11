@@ -64,7 +64,6 @@ def init_components(args, config):
             engine=config.voice.engine,
             output_device=config.audio.output_device,
             piper_model=config.voice.piper_model,
-            voicevox_url=config.voice.voicevox_url,
             speaker_id=config.voice.speaker_id,
             speed=config.voice.speed,
             volume=config.voice.volume,

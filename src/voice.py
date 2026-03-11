@@ -24,10 +24,10 @@ except ImportError:
     AUDIO_AVAILABLE = False
 
 try:
-    import requests
-    REQUESTS_AVAILABLE = True
+    from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+    VOICEVOX_CORE_AVAILABLE = True
 except ImportError:
-    REQUESTS_AVAILABLE = False
+    VOICEVOX_CORE_AVAILABLE = False
 
 # Japanese/CJK detection
 _CJK_RE = re.compile(r'[\u3000-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]')
@@ -81,15 +81,18 @@ class Voice:
     - English only → Piper
     """
 
+    # Default paths for VOICEVOX Core files (relative to project root)
+    _VOICEVOX_ONNX = "./models/voicevox/voicevox_core/onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3"
+    _VOICEVOX_DICT = "./models/voicevox/voicevox_core/dict/open_jtalk_dic_utf_8-1.11"
+    _VOICEVOX_VVM = "./models/voicevox/voicevox_core/models/vvms/0.vvm"  # contains ずんだもん
+
     def __init__(self, engine: str = "mock", output_device: Optional[int] = None,
                  piper_model: Optional[str] = None,
-                 voicevox_url: str = "http://localhost:50021",
-                 speaker_id: int = 1, speed: float = 1.1,
+                 speaker_id: int = 3, speed: float = 1.1,
                  volume: float = 0.3):
         self.engine = engine
         self.output_device = output_device
         self.piper_model = piper_model
-        self.voicevox_url = voicevox_url
         self.speaker_id = speaker_id
         self.speed = speed
         self.volume = volume
@@ -99,6 +102,7 @@ class Voice:
         # Cache availability checks for auto mode
         self._piper_ok = None
         self._voicevox_ok = None
+        self._vv_synth: Optional["Synthesizer"] = None  # lazy-init
 
     def is_available(self) -> bool:
         if self.engine == "mock":
@@ -122,14 +126,12 @@ class Voice:
 
     def _check_voicevox(self) -> bool:
         if self._voicevox_ok is None:
-            if not REQUESTS_AVAILABLE:
-                self._voicevox_ok = False
-            else:
-                try:
-                    r = requests.get(f"{self.voicevox_url}/speakers", timeout=2)
-                    self._voicevox_ok = r.status_code == 200
-                except Exception:
-                    self._voicevox_ok = False
+            self._voicevox_ok = (
+                VOICEVOX_CORE_AVAILABLE
+                and Path(self._VOICEVOX_ONNX).exists()
+                and Path(self._VOICEVOX_DICT).exists()
+                and Path(self._VOICEVOX_VVM).exists()
+            )
         return self._voicevox_ok
 
     def speak(self, text: str, blocking: bool = True) -> bool:
@@ -199,30 +201,28 @@ class Voice:
         sd.wait()
         return True
 
-    # ---- VOICEVOX TTS (Japanese) ----
+    # ---- VOICEVOX TTS (Japanese, local Core) ----
+
+    def _init_voicevox(self) -> "Synthesizer":
+        """Lazy-init VOICEVOX Core synthesizer on first use."""
+        if self._vv_synth is None:
+            ort = Onnxruntime.load_once(filename=self._VOICEVOX_ONNX)
+            jtalk = OpenJtalk(self._VOICEVOX_DICT)
+            self._vv_synth = Synthesizer(ort, jtalk)
+            model = VoiceModelFile.open(self._VOICEVOX_VVM)
+            self._vv_synth.load_voice_model(model)
+            print(f"[voice] VOICEVOX Core loaded (style_id={self.speaker_id})")
+        return self._vv_synth
 
     def _voicevox_speak(self, text: str) -> bool:
         text = _prep_for_voicevox(text)
-        if not REQUESTS_AVAILABLE or not AUDIO_AVAILABLE:
+        if not VOICEVOX_CORE_AVAILABLE or not AUDIO_AVAILABLE:
             print(f"[ピーちゃん] {text}")
             return False
 
-        params = {"text": text, "speaker": self.speaker_id}
-        r = requests.post(f"{self.voicevox_url}/audio_query", params=params, timeout=10)
-        if r.status_code != 200:
-            return False
-        query = r.json()
-        query["speedScale"] = self.speed
-
-        r = requests.post(
-            f"{self.voicevox_url}/synthesis",
-            params={"speaker": self.speaker_id},
-            json=query, timeout=30,
-        )
-        if r.status_code != 200:
-            return False
-
-        self._play_wav_bytes(r.content)
+        synth = self._init_voicevox()
+        wav_bytes = synth.tts(text, style_id=self.speaker_id)
+        self._play_wav_bytes(wav_bytes)
         return True
 
     def _play_wav_bytes(self, wav_data: bytes):
