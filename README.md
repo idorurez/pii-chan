@@ -120,8 +120,11 @@ pii-chan/
 
 ## Status
 
-🔄 **Voice loop working! Next: VOICEVOX Core integration + display**
+🔄 **Voice loop working! Next: VOICEVOX Core integration into voice.py**
 
+*Last updated: 2026-03-10*
+
+### Completed
 - [x] Product spec defined
 - [x] Architecture designed
 - [x] Skill structure created
@@ -130,12 +133,18 @@ pii-chan/
 - [x] Systemd service with auto-reconnect
 - [x] Comprehensive troubleshooting docs
 - [x] Hardware: Pi 5 + USB soundcard (mic + speaker)
-- [x] Wake word detection (OpenWakeWord, "hey Jarvis")
+- [x] Wake word detection (OpenWakeWord, "hey Jarvis", 0.99 confidence)
 - [x] Speech-to-text (Vosk, offline)
-- [x] English TTS (Piper, local)
-- [x] Full voice loop: wake word → STT → brain → TTS
-- [x] Auto-detect dual TTS engine (English → Piper, Japanese → VOICEVOX)
-- [ ] Japanese TTS (VOICEVOX Core local synthesis — in progress)
+- [x] English TTS (Piper en_US-lessac-medium, local)
+- [x] Full voice loop: wake word → STT → brain → TTS (end-to-end working)
+- [x] Auto-detect dual TTS engine logic (English → Piper, Japanese → VOICEVOX)
+- [x] VOICEVOX Core 0.16.4 installed (Python bindings, ONNX runtime, dictionary, 26 .vvm model files)
+
+### In Progress
+- [ ] **VOICEVOX Core integration into `src/voice.py`** — Core is installed and models are downloaded, but `_voicevox_speak()` still uses the old HTTP API. Need to: find ずんだもん's .vvm file, test synthesis via Core bindings, rewrite `_voicevox_speak()` to use local Core instead of HTTP
+- [ ] LLM model download for local fallback (currently rule-based only)
+
+### Not Started
 - [ ] Display + face
 - [ ] CAN reading with real hardware
 - [ ] Daily driver testing
