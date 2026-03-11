@@ -1,228 +1,344 @@
 #!/usr/bin/env python3
 """
-OpenClaw Node Integration for Pii-chan
+OpenClaw Node — WebSocket client for the gateway.
 
-This module handles the connection between the Pi and OpenClaw gateway,
-exposing CAN bus operations as tools that Claude can invoke.
+Connects to the OpenClaw gateway as a paired node, sends voice
+transcripts, and streams Claude's responses back for TTS.
 """
 
-import json
 import asyncio
-from dataclasses import dataclass, asdict
-from typing import Optional, Callable, Any
-from enum import Enum
+import base64
+import json
+import time
+import uuid
+from pathlib import Path
+from typing import Optional, Callable
 
-# TODO: Import actual OpenClaw node SDK when available
-# from openclaw import Node, Tool
-
-
-@dataclass
-class CarState:
-    """Current vehicle state - exposed to Claude as context."""
-    engine_running: bool = False
-    speed_kmh: float = 0.0
-    gear: str = "P"
-    battery_soc: float = 100.0
-    fuel_level: float = 100.0
-    
-    # Climate
-    climate_temp_driver: float = 72.0
-    climate_temp_passenger: float = 72.0
-    climate_temp_rear: float = 72.0
-    climate_fan_speed: int = 0
-    climate_mode: str = "auto"  # auto, face, feet, both, defrost
-    climate_sync: bool = True
-    
-    # Doors/lights
-    any_door_open: bool = False
-    headlights_on: bool = False
-    
-    def to_context(self) -> str:
-        """Format state as context for Claude."""
-        lines = [
-            "## Current Vehicle State",
-            f"- Engine: {'Running' if self.engine_running else 'Off'}",
-            f"- Speed: {self.speed_kmh:.0f} km/h",
-            f"- Gear: {self.gear}",
-            f"- Battery: {self.battery_soc:.0f}%",
-            f"- Fuel: {self.fuel_level:.0f}%",
-            "",
-            "### Climate",
-            f"- Driver zone: {self.climate_temp_driver}°F, {self.climate_mode}",
-            f"- Passenger zone: {self.climate_temp_passenger}°F",
-            f"- Rear zone: {self.climate_temp_rear}°F", 
-            f"- Fan: {self.climate_fan_speed}",
-            f"- Sync: {'On' if self.climate_sync else 'Off'}",
-        ]
-        return "\n".join(lines)
+import websockets
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import (
+    load_pem_private_key,
+    Encoding,
+    PublicFormat,
+)
 
 
-class PiiChanNode:
-    """
-    OpenClaw node that runs in the car.
-    
-    Exposes CAN bus operations as tools and provides vehicle context
-    to Claude for natural conversation.
-    """
-    
-    def __init__(self, can_interface=None):
-        self.can = can_interface
-        self.state = CarState()
+class OpenClawNode:
+    """WebSocket client that connects to the OpenClaw gateway as a node."""
+
+    def __init__(
+        self,
+        config_dir: str = "~/.openclaw",
+        on_response: Optional[Callable[[str], None]] = None,
+    ):
+        self.config_dir = Path(config_dir).expanduser()
+        self.on_response = on_response
+
+        # Loaded from config files
+        self._node_id: Optional[str] = None
+        self._display_name: Optional[str] = None
+        self._gateway_host: Optional[str] = None
+        self._gateway_port: int = 18789
+        self._gateway_tls: bool = False
+        self._device_id: Optional[str] = None
+        self._private_key: Optional[Ed25519PrivateKey] = None
+        self._public_key_pem: Optional[str] = None
+        self._device_token: Optional[str] = None
+        self._gateway_token: Optional[str] = None
+
+        self._ws = None
         self._connected = False
-        
-    async def connect(self, gateway_url: str, node_token: str):
-        """Connect to OpenClaw gateway as a node."""
-        # TODO: Implement actual OpenClaw node registration
-        # This will use the openclaw SDK when available
-        print(f"[Node] Connecting to {gateway_url}...")
+        self._req_counter = 0
+        self._pending: dict[str, asyncio.Future] = {}
+
+    # ---- Config loading ----
+
+    def load_config(self):
+        """Load node config, device identity, and auth from ~/.openclaw."""
+        node_json = self.config_dir / "node.json"
+        device_json = self.config_dir / "identity" / "device.json"
+        auth_json = self.config_dir / "identity" / "device-auth.json"
+
+        if not node_json.exists():
+            raise FileNotFoundError(f"Node config not found: {node_json}")
+        if not device_json.exists():
+            raise FileNotFoundError(f"Device identity not found: {device_json}")
+        if not auth_json.exists():
+            raise FileNotFoundError(f"Device auth not found: {auth_json}")
+
+        # Node config
+        node = json.loads(node_json.read_text())
+        self._node_id = node["nodeId"]
+        self._display_name = node.get("displayName", "piichan")
+        gw = node.get("gateway", {})
+        self._gateway_host = gw.get("host", "100.112.61.98")
+        self._gateway_port = gw.get("port", 18789)
+        self._gateway_tls = gw.get("tls", False)
+
+        # Device identity (Ed25519 keypair)
+        device = json.loads(device_json.read_text())
+        self._device_id = device["deviceId"]
+        self._public_key_pem = device["publicKeyPem"]
+        pem_bytes = device["privateKeyPem"].encode()
+        self._private_key = load_pem_private_key(pem_bytes, password=None)
+
+        # Auth token
+        auth = json.loads(auth_json.read_text())
+        tokens = auth.get("tokens", {})
+        node_token = tokens.get("node", {})
+        self._device_token = node_token.get("token")
+
+        # Gateway shared token (optional, from env or openclaw.json)
+        oc_json = self.config_dir / "openclaw.json"
+        if oc_json.exists():
+            oc = json.loads(oc_json.read_text())
+            self._gateway_token = oc.get("gateway", {}).get("auth", {}).get("token")
+
+        print(f"[node] Config loaded: {self._display_name} → "
+              f"{self._gateway_host}:{self._gateway_port}")
+
+    # ---- Ed25519 challenge signing ----
+
+    def _sign_challenge(self, nonce: str) -> tuple[str, int]:
+        """Sign the gateway challenge nonce. Returns (signature_b64, signed_at_ms)."""
+        signed_at_ms = int(time.time() * 1000)
+        # v2 pipe-delimited payload
+        token_for_sig = self._gateway_token or self._device_token or ""
+        payload = "|".join([
+            "v2",
+            self._device_id,
+            "node-host",       # clientId
+            "node",            # clientMode
+            "node",            # role
+            "",                # scopes (empty)
+            str(signed_at_ms),
+            token_for_sig,
+            nonce,
+        ])
+        sig = self._private_key.sign(payload.encode())
+        return base64.b64encode(sig).decode(), signed_at_ms
+
+    # ---- WebSocket connection ----
+
+    def _next_id(self) -> str:
+        self._req_counter += 1
+        return f"r{self._req_counter}"
+
+    async def _send_req(self, method: str, params: dict) -> dict:
+        """Send a request and wait for the response."""
+        req_id = self._next_id()
+        msg = {"type": "req", "id": req_id, "method": method, "params": params}
+
+        fut = asyncio.get_event_loop().create_future()
+        self._pending[req_id] = fut
+
+        await self._ws.send(json.dumps(msg))
+
+        # Read messages until we get our response
+        deadline = time.time() + 30
+        while not fut.done():
+            if time.time() > deadline:
+                self._pending.pop(req_id, None)
+                raise TimeoutError(f"No response for {method}")
+            try:
+                raw = await asyncio.wait_for(self._ws.recv(), timeout=5)
+                msg_in = json.loads(raw)
+                if msg_in.get("type") == "res":
+                    rid = msg_in.get("id")
+                    f = self._pending.pop(rid, None)
+                    if f and not f.done():
+                        f.set_result(msg_in)
+                elif msg_in.get("type") == "event":
+                    await self._handle_event(msg_in)
+            except asyncio.TimeoutError:
+                continue
+
+        return fut.result()
+
+    async def connect(self):
+        """Connect to the gateway, authenticate, and start listening."""
+        scheme = "wss" if self._gateway_tls else "ws"
+        url = f"{scheme}://{self._gateway_host}:{self._gateway_port}"
+        print(f"[node] Connecting to {url}...")
+
+        self._ws = await websockets.connect(url, max_size=25 * 1024 * 1024)
+
+        # Wait for challenge
+        raw = await asyncio.wait_for(self._ws.recv(), timeout=10)
+        challenge = json.loads(raw)
+        if challenge.get("event") != "connect.challenge":
+            raise RuntimeError(f"Expected connect.challenge, got: {challenge}")
+
+        nonce = challenge["payload"]["nonce"]
+        print(f"[node] Challenge received, signing...")
+
+        # Sign and send connect request
+        sig_b64, signed_at = self._sign_challenge(nonce)
+
+        auth = {}
+        if self._gateway_token:
+            auth["token"] = self._gateway_token
+        if self._device_token:
+            auth["deviceToken"] = self._device_token
+
+        result = await self._send_req("connect", {
+            "minProtocol": 3,
+            "maxProtocol": 3,
+            "client": {
+                "id": "node-host",
+                "version": "0.1.0",
+                "platform": "linux",
+                "mode": "node",
+            },
+            "role": "node",
+            "scopes": [],
+            "auth": auth,
+            "device": {
+                "id": self._device_id,
+                "publicKey": self._public_key_pem,
+                "signature": sig_b64,
+                "signedAt": signed_at,
+                "nonce": nonce,
+            },
+        })
+
+        if not result.get("ok"):
+            raise RuntimeError(f"Connect failed: {result.get('error')}")
+
         self._connected = True
-        print("[Node] Connected!")
-        
-    def get_tools(self) -> list[dict]:
-        """Return tool definitions for OpenClaw."""
-        return [
-            {
-                "name": "car_state",
-                "description": "Get current vehicle state (speed, gear, climate, etc.)",
-                "parameters": {}
+        print(f"[node] Connected to gateway!")
+
+    async def _recv_loop(self):
+        """Process incoming messages from the gateway."""
+        async for raw in self._ws:
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+
+            msg_type = msg.get("type")
+
+            if msg_type == "res":
+                # Response to a request we sent
+                req_id = msg.get("id")
+                fut = self._pending.pop(req_id, None)
+                if fut and not fut.done():
+                    fut.set_result(msg)
+
+            elif msg_type == "event":
+                await self._handle_event(msg)
+
+    async def _handle_event(self, msg: dict):
+        """Handle an event from the gateway."""
+        event = msg.get("event", "")
+        payload = msg.get("payload", {})
+
+        if event == "agent":
+            stream = payload.get("stream")
+            data = payload.get("data", {})
+
+            if stream == "assistant":
+                # Streaming text delta from Claude
+                delta = data.get("delta", "")
+                if delta:
+                    pass  # Could show streaming progress here
+
+            elif stream == "lifecycle":
+                phase = data.get("phase")
+                if phase == "end":
+                    # Agent run complete — we'll get the final text from chat event
+                    pass
+
+        elif event == "chat":
+            state = payload.get("state")
+            if state == "final":
+                # Final complete response
+                message = payload.get("message", {})
+                text = ""
+                for block in message.get("content", []):
+                    if block.get("type") == "text":
+                        text += block.get("text", "")
+                if text and self.on_response:
+                    self.on_response(text)
+
+    # ---- Public API ----
+
+    async def send_voice_transcript(self, text: str):
+        """Send a voice transcript to the gateway for Claude to respond to."""
+        if not self._connected:
+            print("[node] Not connected to gateway")
+            return
+
+        req_id = self._next_id()
+        msg = {
+            "type": "req",
+            "id": req_id,
+            "method": "node.event",
+            "params": {
+                "event": "voice.transcript",
+                "payload": {"text": text},
             },
-            {
-                "name": "climate_set",
-                "description": "Set climate control. Can control temperature, fan, mode, and sync.",
-                "parameters": {
-                    "zone": {
-                        "type": "string",
-                        "enum": ["driver", "passenger", "rear", "all"],
-                        "description": "Which zone to control"
-                    },
-                    "temp": {
-                        "type": "number",
-                        "description": "Temperature in Fahrenheit (60-85)"
-                    },
-                    "fan": {
-                        "type": "integer",
-                        "description": "Fan speed (0-7, 0=auto)"
-                    },
-                    "mode": {
-                        "type": "string",
-                        "enum": ["auto", "face", "feet", "both", "defrost"],
-                        "description": "Airflow mode"
-                    },
-                    "sync": {
-                        "type": "boolean",
-                        "description": "Sync all zones to driver settings"
-                    }
-                }
-            },
-            {
-                "name": "climate_off",
-                "description": "Turn off climate control completely"
-            }
-        ]
-    
-    async def handle_tool_call(self, tool_name: str, params: dict) -> dict:
-        """Handle tool invocation from Claude."""
-        
-        if tool_name == "car_state":
-            return {
-                "success": True,
-                "state": asdict(self.state)
-            }
-            
-        elif tool_name == "climate_set":
-            return await self._set_climate(params)
-            
-        elif tool_name == "climate_off":
-            return await self._climate_off()
-            
-        else:
-            return {"success": False, "error": f"Unknown tool: {tool_name}"}
-    
-    async def _set_climate(self, params: dict) -> dict:
-        """Set climate control via CAN bus."""
-        zone = params.get("zone", "driver")
-        
-        # Update local state
-        if "temp" in params:
-            temp = params["temp"]
-            if zone in ["driver", "all"]:
-                self.state.climate_temp_driver = temp
-            if zone in ["passenger", "all"]:
-                self.state.climate_temp_passenger = temp
-            if zone in ["rear", "all"]:
-                self.state.climate_temp_rear = temp
-                
-        if "fan" in params:
-            self.state.climate_fan_speed = params["fan"]
-            
-        if "mode" in params:
-            self.state.climate_mode = params["mode"]
-            
-        if "sync" in params:
-            self.state.climate_sync = params["sync"]
-            if params["sync"]:
-                # When syncing, copy driver to all zones
-                self.state.climate_temp_passenger = self.state.climate_temp_driver
-                self.state.climate_temp_rear = self.state.climate_temp_driver
-        
-        # TODO: Actually write to CAN bus
-        # await self.can.write_climate(...)
-        
-        return {
-            "success": True,
-            "message": f"Climate updated for {zone} zone",
-            "new_state": {
-                "driver": self.state.climate_temp_driver,
-                "passenger": self.state.climate_temp_passenger,
-                "rear": self.state.climate_temp_rear,
-                "fan": self.state.climate_fan_speed,
-                "mode": self.state.climate_mode,
-                "sync": self.state.climate_sync
-            }
         }
-    
-    async def _climate_off(self) -> dict:
-        """Turn off climate completely."""
-        self.state.climate_fan_speed = 0
-        # TODO: Write to CAN bus
-        return {"success": True, "message": "Climate control off"}
-    
-    def get_context(self) -> str:
-        """Get current context for Claude (injected into prompts)."""
-        return self.state.to_context()
+        await self._ws.send(json.dumps(msg))
+        # Response will be picked up by _recv_loop
+
+    async def run(self):
+        """Connect and run the receive loop. Reconnects on failure."""
+        while True:
+            try:
+                await self.connect()
+                await self._recv_loop()
+            except (websockets.ConnectionClosed, ConnectionError) as e:
+                print(f"[node] Disconnected: {e}")
+                self._connected = False
+                print("[node] Reconnecting in 5s...")
+                await asyncio.sleep(5)
+            except Exception as e:
+                print(f"[node] Error: {e}")
+                self._connected = False
+                await asyncio.sleep(5)
+
+    @property
+    def connected(self) -> bool:
+        return self._connected
+
+    async def disconnect(self):
+        """Close the WebSocket connection."""
+        self._connected = False
+        if self._ws:
+            await self._ws.close()
 
 
-# Example usage
 async def main():
-    """Demo the node interface."""
-    node = PiiChanNode()
-    
-    # Show tools
-    print("Available tools:")
-    for tool in node.get_tools():
-        print(f"  - {tool['name']}: {tool['description']}")
-    
-    print()
-    
-    # Get state
-    result = await node.handle_tool_call("car_state", {})
-    print("Current state:", json.dumps(result, indent=2))
-    
-    print()
-    
-    # Set climate
-    result = await node.handle_tool_call("climate_set", {
-        "zone": "rear",
-        "mode": "feet",
-        "sync": False
-    })
-    print("Climate set result:", json.dumps(result, indent=2))
-    
-    print()
-    
-    # Context for Claude
-    print("Context for Claude:")
-    print(node.get_context())
+    """Quick test: connect, send a message, print response."""
+    response_text = None
+    response_event = asyncio.Event()
+
+    def on_response(text):
+        nonlocal response_text
+        response_text = text
+        print(f"\n[Claude] {text}")
+        response_event.set()
+
+    node = OpenClawNode(on_response=on_response)
+    node.load_config()
+    await node.connect()
+
+    # Start receive loop in background
+    recv_task = asyncio.create_task(node.run())
+
+    # Send a test message
+    print("\nSending test message...")
+    await node.send_voice_transcript("Hello, what is your name?")
+
+    # Wait for response
+    try:
+        await asyncio.wait_for(response_event.wait(), timeout=30)
+    except asyncio.TimeoutError:
+        print("[node] Timed out waiting for response")
+
+    await node.disconnect()
+    recv_task.cancel()
 
 
 if __name__ == "__main__":
