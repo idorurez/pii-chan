@@ -8,9 +8,11 @@ Usage:
     python -m src.main --simulator  # Interactive pygame simulator
     python -m src.main --no-voice   # Disable voice output
     python -m src.main --no-mic     # Disable voice input (wake word + STT)
+    python -m src.main --no-gateway # Disable OpenClaw gateway (local brain only)
 """
 
 import argparse
+import asyncio
 import time
 import signal
 import sys
@@ -186,11 +188,119 @@ def print_state(state: CarState):
     print()
 
 
+class GatewayBridge:
+    """Bridges sync voice callbacks to the async OpenClaw gateway node."""
+
+    def __init__(self):
+        self.node = None
+        self._loop = None
+        self._thread = None
+        self._response_text = None
+        self._response_event = threading.Event()
+
+    def start(self):
+        """Try to connect to the OpenClaw gateway. Returns True if connected."""
+        try:
+            from .node import OpenClawNode
+        except ImportError as e:
+            print(f"  Gateway: import failed ({e})")
+            return False
+
+        self._response_event = threading.Event()
+
+        def on_response(text):
+            self._response_text = text
+            self._response_event.set()
+
+        try:
+            self.node = OpenClawNode(on_response=on_response)
+            self.node.load_config()
+        except Exception as e:
+            print(f"  Gateway: config error ({e})")
+            self.node = None
+            return False
+
+        # Run the node event loop in a background thread
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(
+            target=self._run_loop, daemon=True
+        )
+        self._thread.start()
+
+        # Wait for connection (up to 15s)
+        for _ in range(30):
+            if self.node.connected:
+                print(f"  Gateway: connected")
+                return True
+            time.sleep(0.5)
+
+        print(f"  Gateway: connection timed out, using local brain")
+        return False
+
+    def _run_loop(self):
+        asyncio.set_event_loop(self._loop)
+        self._loop.run_until_complete(self.node.run())
+
+    @property
+    def connected(self):
+        return self.node is not None and self.node.connected
+
+    def send_and_wait(self, text, timeout=30):
+        """Send a voice transcript and wait for the response. Returns text or None."""
+        if not self.connected or self._loop is None:
+            return None
+
+        self._response_text = None
+        self._response_event.clear()
+
+        # Schedule the send on the node's event loop
+        future = asyncio.run_coroutine_threadsafe(
+            self.node.send_voice_transcript(text), self._loop
+        )
+        try:
+            future.result(timeout=5)  # send should complete quickly
+        except Exception as e:
+            print(f"  [gateway send error: {e}]")
+            return None
+
+        # Wait for Claude's response
+        if self._response_event.wait(timeout=timeout):
+            return self._response_text
+        else:
+            print("  [gateway response timeout]")
+            return None
+
+    def stop(self):
+        if self.node and self._loop:
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    self.node.disconnect(), self._loop
+                ).result(timeout=3)
+            except Exception:
+                pass
+
+
+def _chat_with_fallback(gateway, brain, can_state, text):
+    """Try gateway first, fall back to local brain. Returns (response, source)."""
+    if gateway and gateway.connected:
+        response = gateway.send_and_wait(text)
+        if response:
+            return response, "cloud"
+    return brain.chat(text, can_state), "local"
+
+
 def run_text_mode(args, config):
     """Interactive text-based mode for testing."""
     global running
 
     can, voice, voice_input, brain, memory = init_components(args, config)
+
+    # Gateway (primary brain)
+    gateway = None
+    if not args.no_gateway:
+        gateway = GatewayBridge()
+        if not gateway.start():
+            gateway = None
 
     print()
     print("Text mode ready! Type 'help' for commands.")
@@ -276,7 +386,8 @@ def run_text_mode(args, config):
                     text = voice_input.listen_once()
                     if text:
                         print(f"  Heard: \"{text}\"")
-                        response = brain.chat(text, can.state)
+                        response, src = _chat_with_fallback(gateway, brain, can.state, text)
+                        print(f"  ({src})")
                         voice.speak(response)
                     else:
                         print("  (Didn't catch that)")
@@ -289,7 +400,8 @@ def run_text_mode(args, config):
             elif verb == "state":
                 print_state(can.state)
             else:
-                response = brain.chat(cmd, can.state)
+                response, src = _chat_with_fallback(gateway, brain, can.state, cmd)
+                print(f"  ({src})")
                 voice.speak(response)
 
     finally:
@@ -297,12 +409,14 @@ def run_text_mode(args, config):
         print("\nStopping...")
         brain.end_session()
         can.stop()
+        if gateway:
+            gateway.stop()
         voice.speak("See you next time!")
         print("Goodbye!")
 
 
 def run_voice_mode(args, config):
-    """Full voice loop: wake word -> STT -> brain -> TTS."""
+    """Full voice loop: wake word -> STT -> gateway/brain -> TTS."""
     global running
 
     can, voice, voice_input, brain, memory = init_components(args, config)
@@ -314,6 +428,13 @@ def run_voice_mode(args, config):
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+
+    # Gateway (primary brain — Claude via OpenClaw)
+    gateway = None
+    if not args.no_gateway:
+        gateway = GatewayBridge()
+        if not gateway.start():
+            gateway = None
 
     brain.start_session()
     can.start()
@@ -328,8 +449,20 @@ def run_voice_mode(args, config):
     def on_speech(text):
         """Called when speech is transcribed after wake word."""
         print(f"  You: \"{text}\"")
-        response = brain.chat(text, can.state)
-        print(f"  ピーちゃん: \"{response}\"")
+
+        response = None
+
+        # Try gateway first (Claude via OpenClaw)
+        if gateway and gateway.connected:
+            response = gateway.send_and_wait(text)
+            if response:
+                print(f"  ピーちゃん (cloud): \"{response}\"")
+
+        # Fall back to local brain
+        if response is None:
+            response = brain.chat(text, can.state)
+            print(f"  ピーちゃん (local): \"{response}\"")
+
         voice.speak(response, blocking=True)
         if brain.current_session:
             memory.log_speech(response, brain.current_session.session_id)
@@ -345,7 +478,8 @@ def run_voice_mode(args, config):
     )
     thinker.start()
 
-    print("Voice mode active. Ctrl+C to stop.\n")
+    brain_label = "gateway + local fallback" if gateway else "local only"
+    print(f"Voice mode active ({brain_label}). Ctrl+C to stop.\n")
 
     try:
         while running:
@@ -356,6 +490,8 @@ def run_voice_mode(args, config):
         voice_input.stop()
         brain.end_session()
         can.stop()
+        if gateway:
+            gateway.stop()
         voice.speak("See you next time!", blocking=True)
         print("Goodbye!")
 
@@ -370,6 +506,7 @@ def main():
     parser.add_argument("--no-voice", action="store_true", help="Disable voice output (TTS)")
     parser.add_argument("--no-mic", action="store_true", help="Disable voice input (wake word + STT)")
     parser.add_argument("--no-model", action="store_true", help="Rule-based responses (no LLM)")
+    parser.add_argument("--no-gateway", action="store_true", help="Disable OpenClaw gateway (local brain only)")
     args = parser.parse_args()
 
     config = Config.load(args.config)
