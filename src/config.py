@@ -16,12 +16,12 @@ class LLMConfig:
     
 @dataclass
 class VoiceOutputConfig:
-    engine: str = "auto"  # "auto", "piper", "voicevox", or "mock"
-    # Piper settings
-    piper_model: str = "./voices/en_US-lessac-medium.onnx"
-    # VOICEVOX settings
+    engine: str = "auto"  # "auto", "kokoro", "voicevox", or "mock"
+    # Kokoro settings (English)
+    kokoro_voice: str = "af_jessica"  # Kokoro voice name
+    # VOICEVOX settings (Japanese)
     speaker_id: int = 3  # ずんだもん ノーマル
-    speed: float = 1.1
+    speed: float = 1.0
     volume: float = 0.3  # 0.0 - 1.0
 
 @dataclass

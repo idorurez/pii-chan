@@ -63,7 +63,7 @@ def init_components(args, config):
         voice = Voice(
             engine=config.voice.engine,
             output_device=config.audio.output_device,
-            piper_model=config.voice.piper_model,
+            kokoro_voice=config.voice.kokoro_voice,
             speaker_id=config.voice.speaker_id,
             speed=config.voice.speed,
             volume=config.voice.volume,

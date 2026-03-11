@@ -2,15 +2,14 @@
 Voice Output - TTS with auto language detection
 
 Engines:
-- "piper": Local Piper TTS (fast, offline, English)
-- "voicevox": VOICEVOX server (Japanese)
-- "auto": Auto-detect language per utterance — Japanese text → VOICEVOX, English → Piper
+- "kokoro": Kokoro-82M TTS (expressive, offline, English)
+- "voicevox": VOICEVOX Core (Japanese, local)
+- "auto": Auto-detect language per utterance — Japanese text → VOICEVOX, English → Kokoro
 - "mock": Print only, no audio
 """
 import io
 import os
 import re
-import subprocess
 import wave
 import threading
 from typing import Optional
@@ -29,10 +28,16 @@ try:
 except ImportError:
     VOICEVOX_CORE_AVAILABLE = False
 
+try:
+    from kokoro_onnx import Kokoro
+    KOKORO_AVAILABLE = True
+except ImportError:
+    KOKORO_AVAILABLE = False
+
 # Japanese/CJK detection
 _CJK_RE = re.compile(r'[\u3000-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]')
 
-# Known Japanese → English substitutions for Piper
+# Known Japanese → English substitutions for Kokoro
 _JP_TO_EN = {
     "ピーちゃん": "Pee-chan",
 }
@@ -43,7 +48,7 @@ _EN_TO_JP = {
     "Pee-chan": "ピーちゃん",
 }
 
-# Strip all CJK for Piper fallback
+# Strip all CJK for Kokoro fallback
 _CJK_STRIP_RE = re.compile(r'[\u3000-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]+')
 
 
@@ -56,8 +61,8 @@ def _has_japanese(text: str) -> bool:
     return bool(_CJK_RE.search(cleaned))
 
 
-def _prep_for_piper(text: str) -> str:
-    """Prepare text for English Piper TTS."""
+def _prep_for_kokoro(text: str) -> str:
+    """Prepare text for English Kokoro TTS."""
     for jp, en in _JP_TO_EN.items():
         text = text.replace(jp, en)
     text = _CJK_STRIP_RE.sub('', text)
@@ -77,8 +82,8 @@ class Voice:
 
     In "auto" mode, each utterance is routed to the appropriate engine
     based on whether it contains Japanese text:
-    - Japanese detected → VOICEVOX (if available, else falls back to Piper with substitutions)
-    - English only → Piper
+    - Japanese detected → VOICEVOX Core (ずんだもん)
+    - English only → Kokoro (af_jessica)
     """
 
     # Default paths for VOICEVOX Core files (relative to project root)
@@ -86,43 +91,48 @@ class Voice:
     _VOICEVOX_DICT = "./models/voicevox/voicevox_core/dict/open_jtalk_dic_utf_8-1.11"
     _VOICEVOX_VVM = "./models/voicevox/voicevox_core/models/vvms/0.vvm"  # contains ずんだもん
 
+    # Default paths for Kokoro model files
+    _KOKORO_MODEL = "./models/kokoro/kokoro-v1.0.onnx"
+    _KOKORO_VOICES = "./models/kokoro/voices-v1.0.bin"
+
     def __init__(self, engine: str = "mock", output_device: Optional[int] = None,
-                 piper_model: Optional[str] = None,
-                 speaker_id: int = 3, speed: float = 1.1,
+                 kokoro_voice: str = "af_jessica",
+                 speaker_id: int = 3, speed: float = 1.0,
                  volume: float = 0.3):
         self.engine = engine
         self.output_device = output_device
-        self.piper_model = piper_model
+        self.kokoro_voice = kokoro_voice
         self.speaker_id = speaker_id
         self.speed = speed
         self.volume = volume
         self._speaking = False
         self._lock = threading.Lock()
 
-        # Cache availability checks for auto mode
-        self._piper_ok = None
+        # Lazy-init engines
+        self._kokoro_ok = None
         self._voicevox_ok = None
-        self._vv_synth: Optional["Synthesizer"] = None  # lazy-init
+        self._kokoro_engine: Optional["Kokoro"] = None
+        self._vv_synth: Optional["Synthesizer"] = None
 
     def is_available(self) -> bool:
         if self.engine == "mock":
             return True
         if self.engine == "auto":
-            return self._check_piper() or self._check_voicevox()
-        if self.engine == "piper":
-            return self._check_piper()
+            return self._check_kokoro() or self._check_voicevox()
+        if self.engine == "kokoro":
+            return self._check_kokoro()
         if self.engine == "voicevox":
             return self._check_voicevox()
         return False
 
-    def _check_piper(self) -> bool:
-        if self._piper_ok is None:
-            try:
-                subprocess.run(["piper", "--help"], capture_output=True)
-                self._piper_ok = not self.piper_model or Path(self.piper_model).exists()
-            except FileNotFoundError:
-                self._piper_ok = False
-        return self._piper_ok
+    def _check_kokoro(self) -> bool:
+        if self._kokoro_ok is None:
+            self._kokoro_ok = (
+                KOKORO_AVAILABLE
+                and Path(self._KOKORO_MODEL).exists()
+                and Path(self._KOKORO_VOICES).exists()
+            )
+        return self._kokoro_ok
 
     def _check_voicevox(self) -> bool:
         if self._voicevox_ok is None:
@@ -150,9 +160,8 @@ class Voice:
         if _has_japanese(text):
             if self._check_voicevox():
                 return "voicevox"
-            # Fallback: substitute Japanese and use Piper
-            return "piper"
-        return "piper"
+            return "kokoro"
+        return "kokoro"
 
     def _speak_sync(self, text: str) -> bool:
         with self._lock:
@@ -164,8 +173,8 @@ class Voice:
             if engine == "auto":
                 engine = self._pick_engine(text)
 
-            if engine == "piper":
-                return self._piper_speak(text)
+            if engine == "kokoro":
+                return self._kokoro_speak(text)
             elif engine == "voicevox":
                 return self._voicevox_speak(text)
             else:
@@ -177,27 +186,27 @@ class Voice:
         finally:
             self._speaking = False
 
-    # ---- Piper TTS (English) ----
+    # ---- Kokoro TTS (English) ----
 
-    def _piper_speak(self, text: str) -> bool:
-        text = _prep_for_piper(text)
+    def _init_kokoro(self) -> "Kokoro":
+        """Lazy-init Kokoro synthesizer on first use."""
+        if self._kokoro_engine is None:
+            self._kokoro_engine = Kokoro(self._KOKORO_MODEL, self._KOKORO_VOICES)
+            print(f"[voice] Kokoro loaded (voice={self.kokoro_voice})")
+        return self._kokoro_engine
+
+    def _kokoro_speak(self, text: str) -> bool:
+        text = _prep_for_kokoro(text)
         if not text:
             return True
-        if not AUDIO_AVAILABLE:
+        if not KOKORO_AVAILABLE or not AUDIO_AVAILABLE:
             print(f"[ピーちゃん] {text}")
             return False
 
-        cmd = ["piper", "--output-raw"]
-        if self.piper_model:
-            cmd += ["--model", self.piper_model]
-
-        result = subprocess.run(
-            cmd, input=text.encode(), capture_output=True, check=True
-        )
-
-        audio = np.frombuffer(result.stdout, dtype=np.int16).astype(np.float32) / 32768.0
-        audio = audio * self.volume
-        sd.play(audio, samplerate=22050, device=self.output_device)
+        kokoro = self._init_kokoro()
+        samples, sr = kokoro.create(text, voice=self.kokoro_voice, speed=self.speed)
+        audio = (samples * self.volume).astype(np.float32)
+        sd.play(audio, sr, device=self.output_device)
         sd.wait()
         return True
 
