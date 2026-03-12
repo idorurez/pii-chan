@@ -29,6 +29,8 @@ from .can_reader import CANReader, CarState, Gear
 from .brain import PiiBrain
 from .voice import Voice
 from .memory import SessionMemory
+from .face_server import FaceServer
+from .face import Expression
 
 # Global for clean shutdown
 running = True
@@ -429,6 +431,10 @@ def run_voice_mode(args, config):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    # Face display server
+    face = FaceServer(port=18793, ui_port=8080)
+    face.start()
+
     # Gateway (primary brain — Claude via OpenClaw)
     gateway = None
     if not args.no_gateway:
@@ -440,15 +446,19 @@ def run_voice_mode(args, config):
     can.start()
 
     print()
+    face.set_expression(Expression.HAPPY)
     voice.speak("ピーちゃん online. Say the wake word when you need me!", blocking=True)
+    face.set_expression(Expression.NEUTRAL)
 
     def on_wake():
         """Called when wake word is detected."""
         print("  [wake]")
+        face.listening()
 
     def on_speech(text):
         """Called when speech is transcribed after wake word."""
         print(f"  You: \"{text}\"")
+        face.thinking()
 
         response = None
 
@@ -463,7 +473,9 @@ def run_voice_mode(args, config):
             response = brain.chat(text, can.state)
             print(f"  ピーちゃん (local): \"{response}\"")
 
+        face.start_speaking()
         voice.speak(response, blocking=True)
+        face.stop_speaking()
         if brain.current_session:
             memory.log_speech(response, brain.current_session.session_id)
 
@@ -487,12 +499,14 @@ def run_voice_mode(args, config):
     finally:
         running = False
         print("\nStopping...")
+        face.set_expression(Expression.SAD)
         voice_input.stop()
         brain.end_session()
         can.stop()
         if gateway:
             gateway.stop()
         voice.speak("See you next time!", blocking=True)
+        face.stop()
         print("Goodbye!")
 
 

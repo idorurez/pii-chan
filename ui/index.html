@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pii-chan Face</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        
+        .face-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+        
+        /* Base face shape - placeholder circle */
+        .face {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 50%;
+            top: 50px;
+            left: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+        }
+        
+        /* Eyes container */
+        .eyes {
+            position: absolute;
+            top: 120px;
+            left: 80px;
+            width: 140px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .eye {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .pupil {
+            width: 25px;
+            height: 25px;
+            background: #2d3436;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease;
+        }
+        
+        .pupil::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            top: 5px;
+            left: 5px;
+        }
+        
+        /* Eyelids for blinking */
+        .eyelid {
+            position: absolute;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            top: 0;
+            transition: height 0.1s ease;
+        }
+        
+        .blinking .eyelid {
+            animation: blink 0.15s ease;
+        }
+        
+        @keyframes blink {
+            0%, 100% { height: 0%; }
+            50% { height: 100%; }
+        }
+        
+        /* Eyebrows */
+        .eyebrows {
+            position: absolute;
+            top: 95px;
+            left: 75px;
+            width: 150px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .eyebrow {
+            width: 45px;
+            height: 8px;
+            background: #5d4037;
+            border-radius: 4px;
+            transition: transform 0.2s ease;
+        }
+        
+        /* Mouth */
+        .mouth {
+            position: absolute;
+            top: 210px;
+            left: 125px;
+            width: 50px;
+            height: 20px;
+            transition: all 0.15s ease;
+        }
+        
+        .mouth-shape {
+            width: 100%;
+            height: 100%;
+            background: #e74c3c;
+            border-radius: 0 0 25px 25px;
+            transition: all 0.15s ease;
+        }
+        
+        /* Blush marks */
+        .blush {
+            position: absolute;
+            width: 35px;
+            height: 15px;
+            background: rgba(255, 150, 150, 0.5);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .blush.left {
+            top: 170px;
+            left: 55px;
+        }
+        
+        .blush.right {
+            top: 170px;
+            right: 55px;
+        }
+        
+        /* Expression states */
+        .face-container[data-expression="happy"] .mouth-shape {
+            height: 30px;
+            border-radius: 0 0 30px 30px;
+        }
+        
+        .face-container[data-expression="happy"] .blush {
+            opacity: 1;
+        }
+        
+        .face-container[data-expression="happy"] .eye {
+            height: 35px;
+            transform: translateY(8px);
+        }
+        
+        .face-container[data-expression="sad"] .mouth-shape {
+            border-radius: 25px 25px 0 0;
+            transform: translateY(10px);
+        }
+        
+        .face-container[data-expression="sad"] .eyebrow {
+            transform: rotate(15deg) translateY(5px);
+        }
+        
+        .face-container[data-expression="sad"] .eyebrow:last-child {
+            transform: rotate(-15deg) translateY(5px);
+        }
+        
+        .face-container[data-expression="surprised"] .eye {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .face-container[data-expression="surprised"] .mouth-shape {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .face-container[data-expression="thinking"] .pupil {
+            transform: translate(-30%, -70%);
+        }
+        
+        .face-container[data-expression="thinking"] .mouth-shape {
+            width: 30px;
+            height: 10px;
+            border-radius: 5px;
+            margin-left: 10px;
+            transform: rotate(-10deg);
+        }
+        
+        .face-container[data-expression="sleepy"] .eyelid {
+            height: 70%;
+        }
+        
+        .face-container[data-expression="sleepy"] .mouth-shape {
+            width: 25px;
+            height: 8px;
+            border-radius: 4px;
+            margin-left: 12px;
+        }
+        
+        .face-container[data-expression="talking"] .mouth-shape {
+            animation: talk 0.2s ease infinite;
+        }
+        
+        @keyframes talk {
+            0%, 100% { height: 15px; }
+            50% { height: 25px; }
+        }
+        
+        .face-container[data-expression="excited"] .face {
+            animation: bounce 0.3s ease infinite;
+        }
+        
+        .face-container[data-expression="excited"] .mouth-shape {
+            height: 35px;
+            width: 60px;
+            margin-left: -5px;
+        }
+        
+        .face-container[data-expression="excited"] .blush {
+            opacity: 1;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .face-container[data-expression="confused"] .eyebrow:first-child {
+            transform: rotate(-20deg) translateY(-5px);
+        }
+        
+        .face-container[data-expression="confused"] .eyebrow:last-child {
+            transform: rotate(10deg) translateY(3px);
+        }
+        
+        .face-container[data-expression="confused"] .mouth-shape {
+            width: 35px;
+            height: 10px;
+            border-radius: 5px;
+            transform: rotate(-5deg);
+            margin-left: 8px;
+        }
+        
+        /* Breathing idle animation */
+        .idle-breathe .face {
+            animation: breathe 3s ease-in-out infinite;
+        }
+        
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        /* Status indicator */
+        .status {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        /* Debug panel */
+        .debug {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .debug.visible {
+            display: block;
+        }
+        
+        .debug button {
+            margin: 2px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="face-container idle-breathe" data-expression="neutral">
+        <div class="face">
+            <div class="eyebrows">
+                <div class="eyebrow"></div>
+                <div class="eyebrow"></div>
+            </div>
+            <div class="eyes">
+                <div class="eye">
+                    <div class="eyelid"></div>
+                    <div class="pupil"></div>
+                </div>
+                <div class="eye">
+                    <div class="eyelid"></div>
+                    <div class="pupil"></div>
+                </div>
+            </div>
+            <div class="blush left"></div>
+            <div class="blush right"></div>
+            <div class="mouth">
+                <div class="mouth-shape"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status">Pii-chan</div>
+    
+    <div class="debug" id="debug">
+        <div>Expression Test:</div>
+        <button onclick="setExpression('neutral')">Neutral</button>
+        <button onclick="setExpression('happy')">Happy</button>
+        <button onclick="setExpression('sad')">Sad</button>
+        <button onclick="setExpression('surprised')">Surprised</button>
+        <button onclick="setExpression('thinking')">Thinking</button>
+        <button onclick="setExpression('sleepy')">Sleepy</button>
+        <button onclick="setExpression('talking')">Talking</button>
+        <button onclick="setExpression('excited')">Excited</button>
+        <button onclick="setExpression('confused')">Confused</button>
+        <hr style="margin: 10px 0;">
+        <button onclick="triggerBlink()">Blink</button>
+        <button onclick="toggleBreathing()">Toggle Breathe</button>
+    </div>
+    
+    <script>
+        const faceContainer = document.querySelector('.face-container');
+        const eyes = document.querySelectorAll('.eye');
+        const debug = document.getElementById('debug');
+        
+        // Show debug panel with 'd' key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'd') {
+                debug.classList.toggle('visible');
+            }
+        });
+        
+        // Set expression
+        function setExpression(expression) {
+            faceContainer.dataset.expression = expression;
+        }
+        
+        // Trigger blink animation
+        function triggerBlink() {
+            eyes.forEach(eye => eye.classList.add('blinking'));
+            setTimeout(() => {
+                eyes.forEach(eye => eye.classList.remove('blinking'));
+            }, 150);
+        }
+        
+        // Toggle breathing animation
+        function toggleBreathing() {
+            faceContainer.classList.toggle('idle-breathe');
+        }
+        
+        // Auto-blink every 3-6 seconds
+        function scheduleNextBlink() {
+            const delay = 3000 + Math.random() * 3000;
+            setTimeout(() => {
+                if (faceContainer.dataset.expression !== 'sleepy') {
+                    triggerBlink();
+                }
+                scheduleNextBlink();
+            }, delay);
+        }
+        scheduleNextBlink();
+        
+        // Eye tracking - follow mouse
+        document.addEventListener('mousemove', (e) => {
+            const rect = faceContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const deltaX = (e.clientX - centerX) / window.innerWidth;
+            const deltaY = (e.clientY - centerY) / window.innerHeight;
+            
+            const pupils = document.querySelectorAll('.pupil');
+            pupils.forEach(pupil => {
+                const moveX = deltaX * 10;
+                const moveY = deltaY * 10;
+                pupil.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+            });
+        });
+        
+        // WebSocket connection for receiving state updates
+        let ws = null;
+        
+        function connectWebSocket() {
+            const wsUrl = `ws://${location.hostname}:18793/face`;
+            console.log('Connecting to', wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('Face WebSocket connected');
+                document.querySelector('.status').textContent = 'Pii-chan (connected)';
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const state = JSON.parse(event.data);
+                    applyState(state);
+                } catch (e) {
+                    console.error('Invalid state:', e);
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket closed, reconnecting...');
+                document.querySelector('.status').textContent = 'Pii-chan (disconnected)';
+                setTimeout(connectWebSocket, 2000);
+            };
+            
+            ws.onerror = (e) => {
+                console.error('WebSocket error:', e);
+            };
+        }
+        
+        function applyState(state) {
+            if (state.expression) {
+                setExpression(state.expression);
+            }
+            
+            if (state.isSpeaking !== undefined) {
+                if (state.isSpeaking) {
+                    setExpression('talking');
+                }
+            }
+            
+            // Eye tracking from state
+            if (state.eyeTargetX !== undefined && state.eyeTargetY !== undefined) {
+                const pupils = document.querySelectorAll('.pupil');
+                pupils.forEach(pupil => {
+                    const moveX = state.eyeTargetX * 10;
+                    const moveY = state.eyeTargetY * 10;
+                    pupil.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+                });
+            }
+        }
+        
+        // Auto-connect to WebSocket server
+        connectWebSocket();
+        
+        console.log('Face display ready. Press "d" to show debug panel.');
+    </script>
+</body>
+</html>
