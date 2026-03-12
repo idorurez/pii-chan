@@ -1,0 +1,842 @@
+{
+  "last_node_id": 19,
+  "last_link_id": 18,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        -600,
+        -200
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "flux_dev.safetensors",
+        "default"
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Flux UNET"
+    },
+    {
+      "id": 2,
+      "type": "DualCLIPLoader",
+      "pos": [
+        -600,
+        -70
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "DualCLIPLoader"
+      },
+      "widgets_values": [
+        "t5xxl_fp16.safetensors",
+        "clip_l.safetensors",
+        "flux",
+        "default"
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Dual CLIP"
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        -600,
+        120
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "ae.safetensors"
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Flux VAE"
+    },
+    {
+      "id": 4,
+      "type": "LoraLoader",
+      "pos": [
+        -220,
+        -200
+      ],
+      "size": [
+        315,
+        126
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoader"
+      },
+      "widgets_values": [
+        "RM_Anime_Cyberpunk_v0.5M.safetensors",
+        1,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3
+          ],
+          "slot_index": 1
+        }
+      ],
+      "title": "LoRA (style)"
+    },
+    {
+      "id": 5,
+      "type": "CLIPTextEncode",
+      "pos": [
+        150,
+        -300
+      ],
+      "size": [
+        450,
+        200
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, \nglowing, robot, glowing eyes, futuristic, sci-fi, \nblush, short hair, purple eyes, \nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, full body, standing pose, arms at sides"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Positive Prompt (EDIT HERE)"
+    },
+    {
+      "id": 6,
+      "type": "FluxGuidance",
+      "pos": [
+        650,
+        -250
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            7
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (3.5)"
+    },
+    {
+      "id": 7,
+      "type": "ModelSamplingFlux",
+      "pos": [
+        150,
+        0
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ModelSamplingFlux"
+      },
+      "widgets_values": [
+        1.15,
+        0.5,
+        1024,
+        1024
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            6,
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "ModelSamplingFlux"
+    },
+    {
+      "id": 8,
+      "type": "BasicGuider",
+      "pos": [
+        650,
+        -150
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "BasicGuider"
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "pos": [
+        650,
+        0
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        42,
+        "randomize"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Noise (randomize for exploration)"
+    },
+    {
+      "id": 10,
+      "type": "KSamplerSelect",
+      "pos": [
+        650,
+        130
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler (euler)"
+    },
+    {
+      "id": 11,
+      "type": "BasicScheduler",
+      "pos": [
+        650,
+        230
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (30 steps)"
+    },
+    {
+      "id": 12,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        650,
+        380
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            13
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Empty Latent (1024x1024)"
+    },
+    {
+      "id": 13,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1050,
+        0
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 9
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 10
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 11
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 12
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "SamplerCustomAdvanced"
+    },
+    {
+      "id": 14,
+      "type": "VAEDecode",
+      "pos": [
+        1400,
+        50
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 14
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            16,
+            17
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "SaveImage",
+      "pos": [
+        1700,
+        -200
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "pii-chan_full"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 16
+        }
+      ],
+      "title": "Save FULL Image"
+    },
+    {
+      "id": 16,
+      "type": "ImageCrop",
+      "pos": [
+        1700,
+        250
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            18
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (512x512 at 256,0)"
+    },
+    {
+      "id": 17,
+      "type": "SaveImage",
+      "pos": [
+        2100,
+        200
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "pii-chan_head"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        }
+      ],
+      "title": "Save CROPPED Head"
+    },
+    {
+      "id": 18,
+      "type": "Note",
+      "pos": [
+        -600,
+        300
+      ],
+      "size": [
+        500,
+        400
+      ],
+      "properties": {},
+      "widgets_values": [
+        "=== PII-CHAN REFERENCE GENERATOR ===\n\nThis workflow generates a reference character and saves:\n1. FULL IMAGE - for Inochi2D rigging (full body)\n2. CROPPED HEAD - for face-only display\n\nCROP SETTINGS (adjust in ImageCrop node):\n  X: 256  Y: 0\n  Width: 512  Height: 512\n\nFor centered character in 1024x1024:\n- Head at top center: X=256, Y=0, 512x512\n- Upper body: X=128, Y=0, 768x768\n- Just face: X=320, Y=64, 384x384\n\nWORKFLOW:\n1. Edit prompt for your character design\n2. Generate (randomize seed to explore)\n3. Find a good one? Set seed to \"fixed\"\n4. Adjust crop position if needed\n5. Use full image for Inochi2D rigging\n6. Use cropped head as display reference\n\nOUTPUTS:\n- pii-chan_full_*.png   → Full body for rigging\n- pii-chan_head_*.png   → Cropped head for face display\n"
+      ],
+      "title": "Instructions"
+    },
+    {
+      "id": 19,
+      "type": "Note",
+      "pos": [
+        150,
+        -550
+      ],
+      "size": [
+        450,
+        180
+      ],
+      "properties": {},
+      "widgets_values": [
+        "ALTERNATIVE FACE-ONLY PROMPT:\n\nanime, cyberpunk, cyborg, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, \nglowing eyes, futuristic, sci-fi, blush, purple eyes, \nanime style, highly detailed, big expressive eyes, \nblack background, front view, centered, \nportrait, face only, head shot, shoulders up, \nno hands visible, close up face"
+      ],
+      "title": "Face-Only Prompt (copy if needed)"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      1,
+      "CLIP"
+    ],
+    [
+      3,
+      4,
+      1,
+      5,
+      0,
+      "CLIP"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      5,
+      4,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      6,
+      7,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      6,
+      0,
+      8,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      8,
+      7,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      9,
+      0,
+      13,
+      0,
+      "NOISE"
+    ],
+    [
+      10,
+      8,
+      0,
+      13,
+      1,
+      "GUIDER"
+    ],
+    [
+      11,
+      10,
+      0,
+      13,
+      2,
+      "SAMPLER"
+    ],
+    [
+      12,
+      11,
+      0,
+      13,
+      3,
+      "SIGMAS"
+    ],
+    [
+      13,
+      12,
+      0,
+      13,
+      4,
+      "LATENT"
+    ],
+    [
+      14,
+      13,
+      0,
+      14,
+      0,
+      "LATENT"
+    ],
+    [
+      15,
+      3,
+      0,
+      14,
+      1,
+      "VAE"
+    ],
+    [
+      16,
+      14,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      17,
+      14,
+      0,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      18,
+      16,
+      0,
+      17,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Model Loading",
+      "bounding": [
+        -620,
+        -240,
+        720,
+        430
+      ],
+      "color": "#3f789e"
+    },
+    {
+      "title": "Prompt",
+      "bounding": [
+        130,
+        -580,
+        480,
+        520
+      ],
+      "color": "#3f8e5e"
+    },
+    {
+      "title": "Sampling",
+      "bounding": [
+        630,
+        -280,
+        340,
+        720
+      ],
+      "color": "#5e3f8e"
+    },
+    {
+      "title": "Output",
+      "bounding": [
+        1680,
+        -240,
+        860,
+        700
+      ],
+      "color": "#8e6f3f"
+    }
+  ],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}
