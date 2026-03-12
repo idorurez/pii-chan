@@ -527,7 +527,7 @@ def main():
 
     if args.simulator:
         from .simulator import DrivingSimulator
-        sim = DrivingSimulator(config)
+        sim = DrivingSimulator(args, config)
         sim.start()
     elif args.simulate:
         run_text_mode(args, config)
