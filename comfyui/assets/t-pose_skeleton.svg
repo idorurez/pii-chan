@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- T-Pose Skeleton for ControlNet -->
+  <!-- Black background -->
+  <rect width="1024" height="1024" fill="#000000"/>
+  
+  <!-- Stick figure in white -->
+  <g stroke="#ffffff" stroke-width="12" stroke-linecap="round" fill="none">
+    <!-- Head -->
+    <circle cx="512" cy="150" r="60" fill="#ffffff"/>
+    
+    <!-- Neck -->
+    <line x1="512" y1="210" x2="512" y2="280"/>
+    
+    <!-- Spine -->
+    <line x1="512" y1="280" x2="512" y2="550"/>
+    
+    <!-- Arms (horizontal T-pose) -->
+    <!-- Left arm -->
+    <line x1="512" y1="300" x2="200" y2="300"/>
+    <!-- Right arm -->
+    <line x1="512" y1="300" x2="824" y2="300"/>
+    
+    <!-- Shoulders -->
+    <circle cx="512" cy="300" r="15" fill="#ffffff"/>
+    
+    <!-- Elbows (optional markers) -->
+    <circle cx="356" cy="300" r="10" fill="#ffffff"/>
+    <circle cx="668" cy="300" r="10" fill="#ffffff"/>
+    
+    <!-- Hands -->
+    <circle cx="200" cy="300" r="12" fill="#ffffff"/>
+    <circle cx="824" cy="300" r="12" fill="#ffffff"/>
+    
+    <!-- Hips -->
+    <line x1="420" y1="550" x2="604" y2="550"/>
+    <circle cx="512" cy="550" r="15" fill="#ffffff"/>
+    
+    <!-- Left leg -->
+    <line x1="420" y1="550" x2="380" y2="850"/>
+    <!-- Right leg -->
+    <line x1="604" y1="550" x2="644" y2="850"/>
+    
+    <!-- Knees -->
+    <circle cx="400" cy="700" r="10" fill="#ffffff"/>
+    <circle cx="624" cy="700" r="10" fill="#ffffff"/>
+    
+    <!-- Feet -->
+    <circle cx="380" cy="850" r="12" fill="#ffffff"/>
+    <circle cx="644" cy="850" r="12" fill="#ffffff"/>
+  </g>
+</svg>
