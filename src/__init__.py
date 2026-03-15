@@ -1,5 +1,5 @@
 """
-ピーちゃん (Pii-chan) - AI Car Companion
+ミラ (Mira) - AI Car Companion
 """
 
 from .config import Config

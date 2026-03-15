@@ -68,7 +68,7 @@ add({
     "id": 1, "type": "LoadImage",
     "pos": [-400, 0], "size": [315, 400],
     "properties": {},
-    "widgets_values": ["pii-chan_reference.png", "image"],
+    "widgets_values": ["mira_reference.png", "image"],
     "outputs": [
         {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
         {"name": "MASK", "type": "MASK", "links": [], "slot_index": 1},
@@ -162,7 +162,7 @@ for i, (name, pos_points, neg_points) in enumerate(LAYERS):
         "id": save_id, "type": "SaveImage",
         "pos": [650, y - 50], "size": [300, 250],
         "properties": {},
-        "widgets_values": [f"pii-chan_layer_{name}"],
+        "widgets_values": [f"mira_layer_{name}"],
         "inputs": [{"name": "images", "type": "IMAGE", "link": l_comp_save}],
         "title": f"Save: {name}"
     })
@@ -204,14 +204,14 @@ TIPS:
   - May need manual cleanup in Photoshop/GIMP
 
 OUTPUT FILES:
-  pii-chan_layer_eye_left.png
-  pii-chan_layer_eye_right.png
-  pii-chan_layer_eyebrow_left.png
-  pii-chan_layer_eyebrow_right.png
-  pii-chan_layer_mouth.png
-  pii-chan_layer_hair_front.png
-  pii-chan_layer_hair_back.png
-  pii-chan_layer_face_base.png
+  mira_layer_eye_left.png
+  mira_layer_eye_right.png
+  mira_layer_eyebrow_left.png
+  mira_layer_eyebrow_right.png
+  mira_layer_mouth.png
+  mira_layer_hair_front.png
+  mira_layer_hair_back.png
+  mira_layer_face_base.png
 
 NEXT STEPS:
   1. Import layers into Inochi2D
@@ -269,7 +269,7 @@ workflow = {
     "version": 0.4,
 }
 
-out_path = __file__.replace("generate_layer_extraction_workflow.py", "pii-chan_layer_extraction.json")
+out_path = __file__.replace("generate_layer_extraction_workflow.py", "mira_layer_extraction.json")
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow, f, indent=2, ensure_ascii=False)
 

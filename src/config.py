@@ -1,5 +1,5 @@
 """
-Pii-chan Configuration
+Mira Configuration
 """
 from dataclasses import dataclass, field
 from pathlib import Path

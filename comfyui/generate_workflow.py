@@ -13,18 +13,16 @@ import json
 
 # Style prompt from the reference image — LoRA needs these keywords to activate properly.
 STYLE_PROMPT = (
-    "anime, cyberpunk, cyborg, exosuit, armor, 1girl, solo, "
-    "digital illustration shoot from a frontal camera angle, looking straight at viewer, "
-    "closed mouth, white hair, bob cut, glowing, robot, glowing eyes, futuristic, sci-fi, "
-    "1girl, solo, blush, short hair, gloves, holding, closed mouth, purple eyes, ponytail, "
-    "white flower, outdoors, earrings, hair scrunchie, wariza, fire, "
-    "anime artwork retro cyberpunk anime art by Tsubasa Nakai, Painting, Hyperrealism, "
-    "urban landscapes, detailed, 80's inspired, synthwave, neon, vibrant, detailed, "
-    "retro futurism, anime style, key visual, vibrant, studio anime, highly detailed, "
-    "big expressive eyes, black background, front view, centered, face only, "
-    "above the shoulder camera framing, positioned in the center of the frame, "
-    "middle of the image, no hands or arms visible in frame, mostly head shot neck up, "
-    "standing straight, face frame"
+    "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \n"
+    "looking straight at viewer, closed mouth, white hair, bob cut, face markings,\n"
+    "robot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\n"
+    "anime artwork retro cyberpunk anime art by Tsubasa Nakai, \n"
+    "Painting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \n"
+    "retro futurism, anime style, key visual, studio anime, highly detailed, \n"
+    "big expressive eyes, black background, \n"
+    "front view, centered, face only, \n"
+    "above the shoulder camera framing, positioned in the center of the frame, \n"
+    "middle of the image, no hands or arms visible in frame, mostly head shot neck up"
 )
 
 # Expression-specific overrides appended to the style prompt.
@@ -119,6 +117,26 @@ links.append([l_clip_lora, 2, 0, 4, 1, "CLIP"])
 out_links(1).append(l_unet_lora)
 out_links(2).append(l_clip_lora)
 
+# 13: LoraLoader (Expression LoRA — chains after cyberpunk LoRA)
+l_model_lora2 = L(); l_clip_lora2 = L()
+add({"id": 13, "type": "LoraLoader",
+     "pos": [LORA_X, -50], "size": [315, 126],
+     "properties": {"Node name for S&R": "LoraLoader"},
+     "widgets_values": ["CHANGE_ME_expression_lora.safetensors", 1, 1],
+     "inputs": [
+         {"name": "model", "type": "MODEL", "link": l_model_lora2},
+         {"name": "clip",  "type": "CLIP",  "link": l_clip_lora2},
+     ],
+     "outputs": [
+         {"name": "MODEL", "type": "MODEL", "links": [], "slot_index": 0},
+         {"name": "CLIP",  "type": "CLIP",  "links": [], "slot_index": 1},
+     ],
+     "title": "LoRA (expressions)"})
+links.append([l_model_lora2, 4, 0, 13, 0, "MODEL"])
+links.append([l_clip_lora2, 4, 1, 13, 1, "CLIP"])
+out_links(4, 0).append(l_model_lora2)
+out_links(4, 1).append(l_clip_lora2)
+
 # 5: IPAdapterFluxLoader
 add({"id": 5, "type": "IPAdapterFluxLoader",
      "pos": [LORA_X, 0], "size": [315, 106],
@@ -131,7 +149,7 @@ add({"id": 5, "type": "IPAdapterFluxLoader",
 add({"id": 6, "type": "LoadImage",
      "pos": [LORA_X, 160], "size": [315, 314],
      "properties": {},
-     "widgets_values": ["pii-chan_reference.png", "image"],
+     "widgets_values": ["mira_reference.png", "image"],
      "outputs": [
          {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
          {"name": "MASK",  "type": "MASK",  "links": [], "slot_index": 1},
@@ -143,7 +161,7 @@ l_model_ipa = L(); l_ipa_apply = L(); l_img_apply = L()
 add({"id": 7, "type": "ApplyIPAdapterFlux",
      "pos": [MID_X, -100], "size": [280, 170],
      "properties": {},
-     "widgets_values": [0.8, 0.0, 1.0],  # weight, start_percent, end_percent
+     "widgets_values": [0.95, 0.0, 1.0],  # weight, start_percent, end_percent (high = strong character lock)
      "inputs": [
          {"name": "model",          "type": "MODEL",         "link": l_model_ipa},
          {"name": "ipadapter_flux", "type": "IPADAPTERFLUX", "link": l_ipa_apply},
@@ -151,10 +169,10 @@ add({"id": 7, "type": "ApplyIPAdapterFlux",
      ],
      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [], "slot_index": 0}],
      "title": "Apply IP-Adapter (Character Lock)"})
-links.append([l_model_ipa, 4, 0, 7, 0, "MODEL"])
+links.append([l_model_ipa, 13, 0, 7, 0, "MODEL"])
 links.append([l_ipa_apply, 5, 0, 7, 1, "IPADAPTERFLUX"])
 links.append([l_img_apply, 6, 0, 7, 2, "IMAGE"])
-out_links(4, 0).append(l_model_ipa)
+out_links(13, 0).append(l_model_ipa)
 out_links(5).append(l_ipa_apply)
 out_links(6).append(l_img_apply)
 
@@ -172,43 +190,68 @@ add({"id": 8, "type": "ModelSamplingFlux",
 links.append([l_model_msf, 7, 0, 8, 0, "MODEL"])
 out_links(7).append(l_model_msf)
 
-# 9: EmptySD3LatentImage (matches reference — uses SD3 variant)
-add({"id": 9, "type": "EmptySD3LatentImage",
-     "pos": [SAMP_X, 400], "size": [315, 106],
-     "properties": {"Node name for S&R": "EmptySD3LatentImage"},
-     "widgets_values": [1024, 1024, 1],
-     "outputs": [{"name": "LATENT", "type": "LATENT", "links": [], "slot_index": 0}],
-     "title": "Empty Latent (1024x1024)"})
+# 9: LoadImage for head mask (RIGHT-CLICK → Open in MaskEditor to paint)
+# Paint WHITE over the head/face area, BLACK everywhere else
+add({"id": 9, "type": "LoadImage",
+     "pos": [MID_X, 350], "size": [315, 400],
+     "properties": {},
+     "widgets_values": ["mira_reference.png", "image"],
+     "outputs": [
+         {"name": "IMAGE", "type": "IMAGE", "links": [], "slot_index": 0},
+         {"name": "MASK",  "type": "MASK",  "links": [], "slot_index": 1},
+     ],
+     "title": "HEAD MASK (right-click → Open in MaskEditor)"})
 
-# 10: KSamplerSelect (euler — shared across all expressions)
-add({"id": 10, "type": "KSamplerSelect",
-     "pos": [SAMP_X, 130], "size": [315, 58],
+# 10: VAEEncode (shared — encode reference image for img2img)
+l_ref_vae_img = L(); l_ref_vae_model = L()
+l_lat_encoded = L()
+add({"id": 10, "type": "VAEEncode",
+     "pos": [SAMP_X, -100], "size": [210, 46],
+     "properties": {"Node name for S&R": "VAEEncode"},
+     "widgets_values": [],
+     "inputs": [
+         {"name": "pixels", "type": "IMAGE", "link": l_ref_vae_img},
+         {"name": "vae",    "type": "VAE",   "link": l_ref_vae_model},
+     ],
+     "outputs": [{"name": "LATENT", "type": "LATENT", "links": [l_lat_encoded], "slot_index": 0}],
+     "title": "Encode Reference (img2img)"})
+links.append([l_ref_vae_img, 6, 0, 10, 0, "IMAGE"])
+links.append([l_ref_vae_model, 3, 0, 10, 1, "VAE"])
+out_links(6).append(l_ref_vae_img)
+out_links(3).append(l_ref_vae_model)
+
+# 11: SetLatentNoiseMask (shared — head mask applied to encoded reference)
+l_mask_link = L()
+l_masked_lat = L()
+add({"id": 11, "type": "SetLatentNoiseMask",
+     "pos": [SAMP_X, -30], "size": [280, 46],
+     "properties": {"Node name for S&R": "SetLatentNoiseMask"},
+     "widgets_values": [],
+     "inputs": [
+         {"name": "samples", "type": "LATENT", "link": l_lat_encoded},
+         {"name": "mask",    "type": "MASK",   "link": l_mask_link},
+     ],
+     "outputs": [{"name": "LATENT", "type": "LATENT", "links": [], "slot_index": 0}],
+     "title": "Head Mask (shared)"})
+links.append([l_lat_encoded, 10, 0, 11, 0, "LATENT"])
+links.append([l_mask_link, 9, 1, 11, 1, "MASK"])
+out_links(9, 1).append(l_mask_link)
+
+# 12: KSamplerSelect (shared)
+add({"id": 12, "type": "KSamplerSelect",
+     "pos": [SAMP_X, 40], "size": [315, 58],
      "properties": {"Node name for S&R": "KSamplerSelect"},
      "widgets_values": ["euler"],
      "outputs": [{"name": "SAMPLER", "type": "SAMPLER", "links": [], "slot_index": 0}],
      "title": "Sampler (euler)"})
 
-# 11: RandomNoise (fixed seed for consistency across expressions)
-add({"id": 11, "type": "RandomNoise",
-     "pos": [SAMP_X, -100], "size": [315, 82],
+# 14: RandomNoise (shared — fixed seed for consistency)
+add({"id": 14, "type": "RandomNoise",
+     "pos": [SAMP_X, 110], "size": [315, 82],
      "properties": {"Node name for S&R": "RandomNoise"},
      "widgets_values": [42, "fixed"],
      "outputs": [{"name": "NOISE", "type": "NOISE", "links": [], "slot_index": 0}],
      "title": "Noise (seed 42)"})
-
-# 12: BasicScheduler (shared — same model, steps, denoise for all expressions)
-l_model_sched = L()
-add({"id": 12, "type": "BasicScheduler",
-     "pos": [SAMP_X, 240], "size": [315, 106],
-     "properties": {"Node name for S&R": "BasicScheduler"},
-     "widgets_values": ["simple", 30, 1],  # scheduler, steps, denoise
-     "inputs": [
-         {"name": "model", "type": "MODEL", "link": l_model_sched},
-     ],
-     "outputs": [{"name": "SIGMAS", "type": "SIGMAS", "links": [], "slot_index": 0}],
-     "title": "Scheduler (30 steps)"})
-links.append([l_model_sched, 8, 0, 12, 0, "MODEL"])
-out_links(8).append(l_model_sched)
 
 # ════════════════════════════════════════════════════════════════════
 # PER-EXPRESSION BRANCHES
@@ -216,27 +259,42 @@ out_links(8).append(l_model_sched)
 #        → SamplerCustomAdvanced → VAEDecode → SaveImage
 # ════════════════════════════════════════════════════════════════════
 
+ROW_H = 350  # more vertical space for extra nodes per expression
+
 for i, (name, expr_desc) in enumerate(EXPRESSIONS):
     y = ROW_Y0 + i * ROW_H
-    prompt_id  = 20 + i  # CLIPTextEncode
-    guid_id    = 30 + i  # FluxGuidance
-    guider_id  = 40 + i  # BasicGuider
-    adv_id     = 50 + i  # SamplerCustomAdvanced
-    decode_id  = 60 + i  # VAEDecode
-    save_id    = 70 + i  # SaveImage
+    prompt_id  = 20 + i   # CLIPTextEncode
+    guid_id    = 30 + i   # FluxGuidance
+    guider_id  = 40 + i   # BasicGuider
+    adv_id     = 50 + i   # SamplerCustomAdvanced
+    decode_id  = 60 + i   # VAEDecode
+    save_id    = 70 + i   # SaveImage
+    # Per-expression: only BasicScheduler stays per-expression (needs per-expression model link)
+    sched_id   = 120 + i  # BasicScheduler
 
     full_prompt = STYLE_PROMPT + ", " + expr_desc
 
-    # Allocate all links for this branch
+    # -- Per-expression BasicScheduler --
+    l_model_sched = L(); l_sigmas_out = L()
+    add({"id": sched_id, "type": "BasicScheduler",
+         "pos": [SAMP_X, y + 180], "size": [315, 106],
+         "properties": {"Node name for S&R": "BasicScheduler"},
+         "widgets_values": ["simple", 30, 0.55],
+         "inputs": [{"name": "model", "type": "MODEL", "link": l_model_sched}],
+         "outputs": [{"name": "SIGMAS", "type": "SIGMAS", "links": [l_sigmas_out], "slot_index": 0}],
+         "title": f"Scheduler ({name})"})
+    links.append([l_model_sched, 8, 0, sched_id, 0, "MODEL"])
+    out_links(8).append(l_model_sched)
+
+    # Allocate links for this branch
     l_clip_prompt  = L()  # CLIP → CLIPTextEncode
     l_prompt_guid  = L()  # CLIPTextEncode → FluxGuidance
     l_guid_guider  = L()  # FluxGuidance → BasicGuider
     l_model_guider = L()  # ModelSamplingFlux → BasicGuider
-    l_noise_adv    = L()  # RandomNoise → SamplerCustomAdvanced
+    l_noise_adv    = L()  # shared RandomNoise → SamplerCustomAdvanced
     l_guider_adv   = L()  # BasicGuider → SamplerCustomAdvanced
-    l_samp_adv     = L()  # KSamplerSelect → SamplerCustomAdvanced
-    l_sigmas_adv   = L()  # BasicScheduler → SamplerCustomAdvanced
-    l_lat_adv      = L()  # EmptyLatent → SamplerCustomAdvanced
+    l_samp_adv     = L()  # shared KSamplerSelect → SamplerCustomAdvanced
+    l_lat_adv      = L()  # shared Head Mask → SamplerCustomAdvanced
     l_adv_dec      = L()  # SamplerCustomAdvanced → VAEDecode
     l_vae_dec      = L()  # VAELoader → VAEDecode
     l_dec_save     = L()  # VAEDecode → SaveImage
@@ -250,8 +308,8 @@ for i, (name, expr_desc) in enumerate(EXPRESSIONS):
          "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING",
                        "links": [l_prompt_guid], "slot_index": 0}],
          "title": f"{name.upper()}"})
-    links.append([l_clip_prompt, 4, 1, prompt_id, 0, "CLIP"])  # LoRA CLIP out
-    out_links(4, 1).append(l_clip_prompt)
+    links.append([l_clip_prompt, 13, 1, prompt_id, 0, "CLIP"])  # Expression LoRA CLIP out
+    out_links(13, 1).append(l_clip_prompt)
 
     # -- FluxGuidance (guidance=3.5, matches reference) --
     add({"id": guid_id, "type": "FluxGuidance",
@@ -289,7 +347,7 @@ for i, (name, expr_desc) in enumerate(EXPRESSIONS):
              {"name": "noise",        "type": "NOISE",   "link": l_noise_adv},
              {"name": "guider",       "type": "GUIDER",  "link": l_guider_adv},
              {"name": "sampler",      "type": "SAMPLER", "link": l_samp_adv},
-             {"name": "sigmas",       "type": "SIGMAS",  "link": l_sigmas_adv},
+             {"name": "sigmas",       "type": "SIGMAS",  "link": l_sigmas_out},
              {"name": "latent_image", "type": "LATENT",  "link": l_lat_adv},
          ],
          "outputs": [
@@ -297,15 +355,14 @@ for i, (name, expr_desc) in enumerate(EXPRESSIONS):
              {"name": "denoised_output",  "type": "LATENT", "links": [],          "slot_index": 1},
          ],
          "title": f"Sample ({name})"})
-    links.append([l_noise_adv,  11, 0, adv_id, 0, "NOISE"])
+    links.append([l_noise_adv,  14, 0, adv_id, 0, "NOISE"])
     links.append([l_guider_adv, guider_id, 0, adv_id, 1, "GUIDER"])
-    links.append([l_samp_adv,   10, 0, adv_id, 2, "SAMPLER"])
-    links.append([l_sigmas_adv, 12, 0, adv_id, 3, "SIGMAS"])
-    links.append([l_lat_adv,     9, 0, adv_id, 4, "LATENT"])
-    out_links(11).append(l_noise_adv)
-    out_links(10).append(l_samp_adv)
-    out_links(12).append(l_sigmas_adv)
-    out_links(9).append(l_lat_adv)
+    links.append([l_samp_adv,   12, 0, adv_id, 2, "SAMPLER"])
+    links.append([l_sigmas_out, sched_id, 0, adv_id, 3, "SIGMAS"])
+    links.append([l_lat_adv,    11, 0, adv_id, 4, "LATENT"])
+    out_links(14).append(l_noise_adv)    # RandomNoise
+    out_links(12).append(l_samp_adv)     # KSamplerSelect
+    out_links(11).append(l_lat_adv)      # SetLatentNoiseMask
 
     # -- VAEDecode --
     add({"id": decode_id, "type": "VAEDecode",
@@ -326,7 +383,7 @@ for i, (name, expr_desc) in enumerate(EXPRESSIONS):
     add({"id": save_id, "type": "SaveImage",
          "pos": [SAVE_X, y], "size": [400, 350],
          "properties": {"Node name for S&R": "SaveImage"},
-         "widgets_values": [f"pii-chan_{name}"],
+         "widgets_values": [f"mira_{name}"],
          "inputs": [{"name": "images", "type": "IMAGE", "link": l_dec_save}],
          "title": f"Save: {name}"})
     links.append([l_dec_save, decode_id, 0, save_id, 0, "IMAGE"])
@@ -335,7 +392,7 @@ for i, (name, expr_desc) in enumerate(EXPRESSIONS):
 # NOTE
 # ════════════════════════════════════════════════════════════════════
 
-NOTE_TEXT = """=== PII-CHAN FLUX EXPRESSION BATCH WORKFLOW ===
+NOTE_TEXT = """=== MIRA FLUX EXPRESSION BATCH WORKFLOW ===
 
 Pipeline (matches reference workflow):
   UNETLoader -> LoraLoader -> ApplyIPAdapterFlux -> ModelSamplingFlux
@@ -355,14 +412,17 @@ MODELS (update filenames in nodes to match yours):
   SigLIP:      google/siglip-so400m-patch14-384  (auto-downloaded)
 
 HOW TO USE:
-  1. Upload reference pii-chan image as 'pii-chan_reference.png'
-  2. Update model filenames if yours differ
-  3. Queue Prompt - all 9 expressions generate in one batch
-  4. Outputs in ComfyUI/output/ as pii-chan_<expression>_00001.png
-  5. Copy PNGs to ui/sprites/
+  1. Upload reference mira image as 'mira_reference.png'
+  2. On the HEAD MASK node: right-click image → Open in MaskEditor
+     Paint WHITE over head/face, leave body BLACK → Save to node
+  3. Update model filenames if yours differ
+  4. Queue Prompt - all 9 expressions generate in one batch
+  5. Outputs in ComfyUI/output/ as mira_<expression>_00001.png
+  6. Copy PNGs to ui/sprites/
 
 TUNING:
-  - IP-Adapter weight: 0.7-0.9 (higher = more like reference)
+  - IP-Adapter weight: 0.95 (higher = more like reference, lower for more variation)
+  - Denoise: 0.55 (img2img — lower = more reference preserved, higher = more expression change)
   - Seed 42 (fixed) for consistency across expressions
   - Guidance 3.5 (in FluxGuidance nodes)
   - 30 steps, euler sampler, simple scheduler
@@ -397,7 +457,7 @@ workflow = {
     "version": 0.4,
 }
 
-out_path = __file__.replace("generate_workflow.py", "pii-chan_flux_expressions.json")
+out_path = __file__.replace("generate_workflow.py", "mira_flux_expressions.json")
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow, f, indent=2, ensure_ascii=False)
 

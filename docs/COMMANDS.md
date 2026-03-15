@@ -1,6 +1,6 @@
 # Command Reference
 
-Quick reference for all Pii-chan setup and maintenance commands.
+Quick reference for all Mira setup and maintenance commands.
 
 ---
 
@@ -48,12 +48,12 @@ docker exec -w /app wintermute node dist/index.js <command>
 # List agents
 docker exec wintermute openclaw agents list
 
-# Add pii-chan agent
-docker exec wintermute openclaw agents add pii-chan \
-  --workspace /home/node/.openclaw/pii-chan-workspace
+# Add mira agent
+docker exec wintermute openclaw agents add mira \
+  --workspace /home/node/.openclaw/mira-workspace
 
 # Remove agent
-docker exec wintermute openclaw agents remove pii-chan
+docker exec wintermute openclaw agents remove mira
 ```
 
 ### Device Management
@@ -80,7 +80,7 @@ docker exec wintermute openclaw nodes status
 
 # Invoke command on node (use full path)
 docker exec wintermute openclaw nodes invoke \
-  --node piichan \
+  --node mira \
   --command system.run \
   --params '{"command":["/usr/bin/echo","hello"]}'
 ```
@@ -91,10 +91,10 @@ Commands must be allowlisted on the Pi before they can be invoked remotely.
 
 ```bash
 # Add command to allowlist (from gateway)
-docker exec wintermute openclaw approvals allowlist add --node piichan "/usr/bin/uname"
+docker exec wintermute openclaw approvals allowlist add --node mira "/usr/bin/uname"
 
 # View current approvals
-docker exec wintermute openclaw approvals get --node piichan
+docker exec wintermute openclaw approvals get --node mira
 ```
 
 Or edit directly on Pi (`~/.openclaw/exec-approvals.json`):
@@ -140,14 +140,14 @@ docker exec wintermute cat /home/node/.openclaw/devices/paired.json > /tmp/paire
 
 ```bash
 # Service control
-sudo systemctl start piichan
-sudo systemctl stop piichan
-sudo systemctl restart piichan
-sudo systemctl status piichan
+sudo systemctl start mira
+sudo systemctl stop mira
+sudo systemctl restart mira
+sudo systemctl status mira
 
 # Enable/disable auto-start
-sudo systemctl enable piichan
-sudo systemctl disable piichan
+sudo systemctl enable mira
+sudo systemctl disable mira
 
 # Reload after editing service file
 sudo systemctl daemon-reload
@@ -157,16 +157,16 @@ sudo systemctl daemon-reload
 
 ```bash
 # Recent logs
-sudo journalctl -u piichan --no-pager -n 50
+sudo journalctl -u mira --no-pager -n 50
 
 # Live tail
-sudo journalctl -u piichan -f
+sudo journalctl -u mira -f
 
 # Logs since time
-sudo journalctl -u piichan --since "1 hour ago"
+sudo journalctl -u mira --since "1 hour ago"
 
 # Logs with grep
-sudo journalctl -u piichan | grep -i error
+sudo journalctl -u mira | grep -i error
 ```
 
 ### Connection Verification
@@ -192,22 +192,22 @@ cat ~/.openclaw/identity/device.json
 cat ~/.openclaw/node.json
 
 # View service file
-cat /etc/systemd/system/piichan.service
+cat /etc/systemd/system/mira.service
 ```
 
 ### Manual Node Run (for debugging)
 
 ```bash
 # Stop service first
-sudo systemctl stop piichan
+sudo systemctl stop mira
 
 # Run manually with full output
 OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1 \
 OPENCLAW_GATEWAY_TOKEN="69d05e0c49fa731be1ebcb8ed9812305" \
-/home/piichan/.npm-global/bin/openclaw node run \
+/home/mira/.npm-global/bin/openclaw node run \
   --host 100.112.61.98 \
   --port 18789 \
-  --display-name piichan 2>&1
+  --display-name mira 2>&1
 ```
 
 ---
@@ -244,7 +244,7 @@ openclaw --help
 openclaw node --help
 
 # Run node (normally via systemd)
-openclaw node run --host <gateway-ip> --port 18789 --display-name piichan
+openclaw node run --host <gateway-ip> --port 18789 --display-name mira
 ```
 
 ---
@@ -293,7 +293,7 @@ wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/me
 wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
 
 # Test
-echo "Hello from Pii-chan" | piper \
+echo "Hello from Mira" | piper \
   --model ~/piper-voices/en_US-lessac-medium.onnx \
   --output_file test.wav && aplay test.wav
 ```
@@ -357,7 +357,7 @@ candump can0,0x123:0x7FF
 | Paired devices | `/home/node/.openclaw/devices/paired.json` |
 | Pending devices | `/home/node/.openclaw/devices/pending.json` |
 | Gateway identity | `/home/node/.openclaw/identity/device.json` |
-| Pii-chan workspace | `/home/node/.openclaw/pii-chan-workspace/` |
+| Mira workspace | `/home/node/.openclaw/mira-workspace/` |
 | Skills | `/home/node/.openclaw/skills/` |
 
 ### Pi
@@ -366,7 +366,7 @@ candump can0,0x123:0x7FF
 |------|------|
 | Node config | `~/.openclaw/node.json` |
 | Device identity | `~/.openclaw/identity/device.json` |
-| Systemd service | `/etc/systemd/system/piichan.service` |
+| Systemd service | `/etc/systemd/system/mira.service` |
 | OpenClaw binary | `~/.npm-global/bin/openclaw` |
 | Vosk models | `~/models/` |
 | Piper voices | `~/piper-voices/` |
@@ -386,7 +386,7 @@ ss -tnp | grep 18789 && echo "✅ Connected" || echo "❌ Not connected"
 
 ```bash
 # On Pi
-systemctl is-active piichan && echo "✅ Running" || echo "❌ Not running"
+systemctl is-active mira && echo "✅ Running" || echo "❌ Not running"
 ```
 
 ### "Can Pi reach gateway?"

@@ -39,13 +39,13 @@ _CJK_RE = re.compile(r'[\u3000-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]')
 
 # Known Japanese → English substitutions for Kokoro
 _JP_TO_EN = {
-    "ピーちゃん": "Pee-chan",
+    "ミラ": "Mira",
 }
 
 # Known English → Japanese substitutions for VOICEVOX
 _EN_TO_JP = {
-    "Pii-chan": "ピーちゃん",
-    "Pee-chan": "ピーちゃん",
+    "Mira": "ミラ",
+    "Mira": "ミラ",
 }
 
 # Strip all CJK for Kokoro fallback
@@ -78,7 +78,7 @@ def _prep_for_voicevox(text: str) -> str:
 
 class Voice:
     """
-    Text-to-speech output for ピーちゃん.
+    Text-to-speech output for ミラ.
 
     In "auto" mode, each utterance is routed to the appropriate engine
     based on whether it contains Japanese text:
@@ -146,7 +146,7 @@ class Voice:
 
     def speak(self, text: str, blocking: bool = True) -> bool:
         if self.engine == "mock":
-            print(f"[ピーちゃん] {text}")
+            print(f"[ミラ] {text}")
             return True
         if blocking:
             return self._speak_sync(text)
@@ -178,7 +178,7 @@ class Voice:
             elif engine == "voicevox":
                 return self._voicevox_speak(text)
             else:
-                print(f"[ピーちゃん] {text}")
+                print(f"[ミラ] {text}")
                 return True
         except Exception as e:
             print(f"TTS error ({self.engine}): {e}")
@@ -200,7 +200,7 @@ class Voice:
         if not text:
             return True
         if not KOKORO_AVAILABLE or not AUDIO_AVAILABLE:
-            print(f"[ピーちゃん] {text}")
+            print(f"[ミラ] {text}")
             return False
 
         kokoro = self._init_kokoro()
@@ -226,7 +226,7 @@ class Voice:
     def _voicevox_speak(self, text: str) -> bool:
         text = _prep_for_voicevox(text)
         if not VOICEVOX_CORE_AVAILABLE or not AUDIO_AVAILABLE:
-            print(f"[ピーちゃん] {text}")
+            print(f"[ミラ] {text}")
             return False
 
         synth = self._init_voicevox()

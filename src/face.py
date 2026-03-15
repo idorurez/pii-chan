@@ -1,5 +1,5 @@
 """
-Face Display - Animated expression system for Pii-chan
+Face Display - Animated expression system for Mira
 
 Manages character expressions and animations for display on screen.
 Designed to be rendered via HTML/JS on the Pi's display.

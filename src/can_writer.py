@@ -179,7 +179,7 @@ class CANWriter:
             return False
 
 
-# Convenience functions for Pii-chan
+# Convenience functions for Mira
 def create_writer(interface: str = "mock", channel: str = "can0") -> CANWriter:
     """Create and connect a CAN writer."""
     writer = CANWriter(interface, channel)

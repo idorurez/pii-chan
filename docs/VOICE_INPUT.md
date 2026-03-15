@@ -1,6 +1,6 @@
 # Voice Input Guide
 
-Voice input for Pii-chan: wake word detection → speech recording → STT transcription.
+Voice input for Mira: wake word detection → speech recording → STT transcription.
 
 ## Current Stack (Working on Pi 5)
 
@@ -75,7 +75,7 @@ source venv/bin/activate
 python -m src.main
 ```
 
-Say "hey Jarvis" → speak your question → Pii-chan responds via TTS.
+Say "hey Jarvis" → speak your question → Mira responds via TTS.
 
 ### Text Mode with Push-to-Talk
 

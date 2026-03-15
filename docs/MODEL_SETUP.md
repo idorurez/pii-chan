@@ -1,6 +1,6 @@
 # Model Setup
 
-Pii-chan uses a local LLM for generating responses. The recommended model is **Qwen 2.5 1.5B Instruct** - it's small enough to run on a Raspberry Pi 5 but capable enough for natural Japanese conversation.
+Mira uses a local LLM for generating responses. The recommended model is **Qwen 2.5 1.5B Instruct** - it's small enough to run on a Raspberry Pi 5 but capable enough for natural Japanese conversation.
 
 ## Quick Setup
 
@@ -57,7 +57,7 @@ print(response['choices'][0]['text'])
 
 ## No Model Mode
 
-If you don't have a model, Pii-chan will use simple rule-based responses:
+If you don't have a model, Mira will use simple rule-based responses:
 
 ```bash
 python -m src.main --simulate --no-model

@@ -1,5 +1,5 @@
 @echo off
-REM Download the LLM model for Pii-chan
+REM Download the LLM model for Mira
 REM Qwen 2.5 1.5B Instruct (Q4_K_M quantization, ~1.1GB)
 
 set MODEL_DIR=models

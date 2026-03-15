@@ -48,15 +48,15 @@ Python (face.py)  →  WebSocket  →  Browser (index.html)
 
 **Files needed:**
 ```
-pii-chan_neutral.png
-pii-chan_happy.png
-pii-chan_sad.png
-pii-chan_surprised.png
-pii-chan_thinking.png
-pii-chan_sleepy.png
-pii-chan_talking.png   (or talking_1.png, talking_2.png, talking_3.png for animation)
-pii-chan_excited.png
-pii-chan_confused.png
+mira_neutral.png
+mira_happy.png
+mira_sad.png
+mira_surprised.png
+mira_thinking.png
+mira_sleepy.png
+mira_talking.png   (or talking_1.png, talking_2.png, talking_3.png for animation)
+mira_excited.png
+mira_confused.png
 ```
 
 ## Animation Strategy
@@ -77,7 +77,7 @@ pii-chan_confused.png
 ## How to Test
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 source venv/bin/activate
 pip install websockets  # if needed
 
@@ -90,7 +90,7 @@ python -m src.face_server
 
 ## Next Steps
 
-1. Generate sprites with ComfyUI (`comfyui/pii-chan_expression_workflow.json`)
+1. Generate sprites with ComfyUI (`comfyui/mira_expression_workflow.json`)
 2. Place PNGs in `ui/sprites/`
 3. Update `ui/index.html` to use sprites instead of CSS shapes
 4. Test crossfade transitions
@@ -103,5 +103,5 @@ python -m src.face_server
 - `src/face_server.py` — WebSocket + HTTP server
 - `ui/index.html` — Browser renderer (currently CSS placeholder)
 - `ui/sprites/` — Empty folder for character sprites
-- `comfyui/pii-chan_expression_workflow.json` — IP-Adapter workflow
+- `comfyui/mira_expression_workflow.json` — IP-Adapter workflow
 - `comfyui/README.md` — ComfyUI setup instructions

@@ -1,6 +1,6 @@
 # Reconnection & Resilience
 
-How to ensure Pii-chan stays connected through network issues, reboots, and gateway restarts.
+How to ensure Mira stays connected through network issues, reboots, and gateway restarts.
 
 ---
 
@@ -46,7 +46,7 @@ The `openclaw node run` command has built-in reconnection:
 docker compose restart wintermute
 
 # On Pi - watch the logs
-sudo journalctl -u piichan -f
+sudo journalctl -u mira -f
 # Should see: disconnect, then reconnect after gateway is up
 ```
 
@@ -54,7 +54,7 @@ sudo journalctl -u piichan -f
 
 **What happens:**
 1. Pi reboots
-2. systemd starts piichan.service
+2. systemd starts mira.service
 3. Node reads identity from `~/.openclaw/identity/device.json`
 4. Connects to gateway with same deviceId
 5. Gateway recognizes device, issues new session token
@@ -66,7 +66,7 @@ sudo journalctl -u piichan -f
 sudo reboot
 
 # Wait 2-3 minutes, then SSH back in
-sudo systemctl status piichan
+sudo systemctl status mira
 ss -tnp | grep 18789
 ```
 
@@ -101,10 +101,10 @@ ss -tnp | grep 18789
 ss -tnp | grep 18789
 
 # Process running?
-systemctl is-active piichan
+systemctl is-active mira
 
 # Recent activity
-sudo journalctl -u piichan --since "10 minutes ago"
+sudo journalctl -u mira --since "10 minutes ago"
 ```
 
 ### Alerting (Optional)
@@ -113,19 +113,19 @@ Create a simple health check script:
 
 ```bash
 #!/bin/bash
-# /home/piichan/check_connection.sh
+# /home/mira/check_connection.sh
 
 if ! ss -tnp | grep -q 18789; then
-    echo "Pii-chan disconnected at $(date)" >> /var/log/piichan-health.log
+    echo "Mira disconnected at $(date)" >> /var/log/mira-health.log
     # Optional: send notification
-    # curl -X POST "https://your-webhook" -d "Pii-chan disconnected"
+    # curl -X POST "https://your-webhook" -d "Mira disconnected"
 fi
 ```
 
 Add to crontab:
 ```bash
 crontab -e
-# Add: */5 * * * * /home/piichan/check_connection.sh
+# Add: */5 * * * * /home/mira/check_connection.sh
 ```
 
 ---
@@ -136,13 +136,13 @@ crontab -e
 
 ```bash
 # Check status
-sudo systemctl status piichan
+sudo systemctl status mira
 
 # View recent logs
-sudo journalctl -u piichan --no-pager -n 100
+sudo journalctl -u mira --no-pager -n 100
 
 # Restart
-sudo systemctl restart piichan
+sudo systemctl restart mira
 ```
 
 ### Identity Issues After Update
@@ -155,7 +155,7 @@ cp -r ~/.openclaw/identity ~/.openclaw/identity.bak
 
 # Let it regenerate (will need re-approval on gateway)
 rm -rf ~/.openclaw/identity
-sudo systemctl restart piichan
+sudo systemctl restart mira
 
 # Approve new identity on gateway
 ```
@@ -166,11 +166,11 @@ If someone changed the gateway token:
 
 ```bash
 # Update the service file with new token
-sudo nano /etc/systemd/system/piichan.service
+sudo nano /etc/systemd/system/mira.service
 # Edit: Environment=OPENCLAW_GATEWAY_TOKEN=NEW_TOKEN_HERE
 
 sudo systemctl daemon-reload
-sudo systemctl restart piichan
+sudo systemctl restart mira
 ```
 
 ---
@@ -181,13 +181,13 @@ sudo systemctl restart piichan
 
 ```ini
 [Unit]
-Description=Pii-chan OpenClaw Node
+Description=Mira OpenClaw Node
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=piichan
+User=mira
 
 # Tailscale transport is encrypted; allow non-TLS WebSocket
 Environment=OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
@@ -196,10 +196,10 @@ Environment=OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
 Environment=OPENCLAW_GATEWAY_TOKEN=69d05e0c49fa731be1ebcb8ed9812305
 
 # The command
-ExecStart=/home/piichan/.npm-global/bin/openclaw node run \
+ExecStart=/home/mira/.npm-global/bin/openclaw node run \
   --host 100.112.61.98 \
   --port 18789 \
-  --display-name piichan
+  --display-name mira
 
 # Auto-restart on any exit
 Restart=always

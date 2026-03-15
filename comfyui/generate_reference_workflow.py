@@ -320,7 +320,7 @@ add({
     "id": 15, "type": "SaveImage",
     "pos": [1700, -200], "size": [400, 400],
     "properties": {"Node name for S&R": "SaveImage"},
-    "widgets_values": ["pii-chan_full"],
+    "widgets_values": ["mira_full"],
     "inputs": [{"name": "images", "type": "IMAGE", "link": l_img_full}],
     "title": "Save FULL Image"
 })
@@ -351,7 +351,7 @@ add({
     "id": 17, "type": "SaveImage",
     "pos": [2100, 200], "size": [400, 400],
     "properties": {"Node name for S&R": "SaveImage"},
-    "widgets_values": ["pii-chan_head"],
+    "widgets_values": ["mira_head"],
     "inputs": [{"name": "images", "type": "IMAGE", "link": l_img_save_crop}],
     "title": "Save CROPPED Head"
 })
@@ -362,7 +362,7 @@ out_links(16).append(l_img_save_crop)
 # NOTES
 # ═══════════════════════════════════════════════════════════════════════
 
-NOTE_TEXT = f"""=== PII-CHAN REFERENCE GENERATOR ===
+NOTE_TEXT = f"""=== MIRA REFERENCE GENERATOR ===
 
 This workflow generates a reference character in A-POSE for Inochi2D rigging.
 
@@ -387,8 +387,8 @@ WORKFLOW:
 5. Use cropped head as display reference
 
 FILES:
-- pii-chan_full_*.png   → Full body for rigging
-- pii-chan_head_*.png   → Cropped head for face display
+- mira_full_*.png   → Full body for rigging
+- mira_head_*.png   → Cropped head for face display
 """
 
 add({
@@ -445,7 +445,7 @@ workflow = {
     "version": 0.4,
 }
 
-out_path = __file__.replace("generate_reference_workflow.py", "pii-chan_flux_reference_v2.json")
+out_path = __file__.replace("generate_reference_workflow.py", "mira_flux_reference_v2.json")
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow, f, indent=2, ensure_ascii=False)
 

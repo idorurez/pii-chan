@@ -1,8 +1,8 @@
-# Pii-chan Product Specification
+# Mira Product Specification
 
 ## Vision
 
-Pii-chan is your AI copilot in the car — an OpenClaw node with a face, voice, and awareness of your vehicle. Not a novelty chatbot, but your actual assistant that happens to live in your car.
+Mira is your AI copilot in the car — an OpenClaw node with a face, voice, and awareness of your vehicle. Not a novelty chatbot, but your actual assistant that happens to live in your car.
 
 ## Core Value Proposition
 
@@ -22,7 +22,7 @@ Everything you can do with OpenClaw (calendar, messages, reminders, web search, 
 
 A phone app would compete with Android Auto / CarPlay — a losing battle:
 
-| AA/CarPlay | Pii-chan |
+| AA/CarPlay | Mira |
 |------------|----------|
 | Navigation (Google/Apple Maps) | ❌ Don't compete |
 | Music (Spotify, etc.) | ❌ Don't compete |
@@ -43,20 +43,20 @@ Head Unit: AA/CarPlay
 ├── Messages
 └── What Google/Apple do best
 
-Pii-chan (Pi + Display): Your AI copilot
+Mira (Pi + Display): Your AI copilot
 ├── CAN bus control
 ├── Vehicle awareness
 ├── AI personality
 └── What they CAN'T do
 ```
 
-**Pii-chan doesn't fight for the head unit. It creates a new category.**
+**Mira doesn't fight for the head unit. It creates a new category.**
 
 Like a dashcam or radar detector — it does its own thing, complements the existing setup.
 
 ### The Moat
 
-Pii-chan's defensible advantages:
+Mira's defensible advantages:
 1. **CAN bus access** — Phones literally cannot do this
 2. **Write capability** — Control climate, not just read data
 3. **Persistent presence** — Dedicated display, always there
@@ -80,7 +80,7 @@ Pii-chan's defensible advantages:
 - Can be toggled visible/hidden based on mood
 
 **3. Voice Interaction**
-- Wake word activation ("Hey Pii-chan" or configurable)
+- Wake word activation ("Hey Mira" or configurable)
 - Natural conversation via Claude
 - Variable voice (can tune TTS voice/style)
 - Can be muted when desired
@@ -116,10 +116,10 @@ Pii-chan's defensible advantages:
 
 1. **Get in car** → Pi auto-boots from 12V power
 2. **Phone connects** → AA/CarPlay to head unit (separate)
-3. **Pii-chan wakes** → Connects via phone WiFi hotspot
+3. **Mira wakes** → Connects via phone WiFi hotspot
 4. **Greeting** → "Good morning! You've got two meetings today and traffic looks light."
-5. **Drive** → Pii-chan visible on dedicated screen, responds to wake word
-6. **Interaction** → "Hey Pii-chan, remind me to call mom when I get home"
+5. **Drive** → Mira visible on dedicated screen, responds to wake word
+6. **Interaction** → "Hey Mira, remind me to call mom when I get home"
 7. **Arrive** → "See you later!"
 
 ### Interaction Modes
@@ -131,7 +131,7 @@ Pii-chan's defensible advantages:
 | **Hidden** | Off | Muted | Listening |
 | **Sleep** | Off | Off | Off |
 
-User can switch modes via voice: "Pii-chan, go quiet" / "Pii-chan, hide" / "Pii-chan, wake up"
+User can switch modes via voice: "Mira, go quiet" / "Mira, hide" / "Mira, wake up"
 
 ### Personality Tuning
 
@@ -139,7 +139,7 @@ Personality defined in config file (`personality.md` or YAML):
 
 ```yaml
 personality:
-  name: "Pii-chan"
+  name: "Mira"
   style: "helpful, slightly playful, concise"
   voice: "warm, feminine"  # or masculine, neutral, robotic, etc.
   greeting_style: "casual"
@@ -147,7 +147,7 @@ personality:
   japanese_mode: false  # toggle for Japanese responses/voice
 ```
 
-Users can adjust via conversation: "Pii-chan, be more formal" → updates config
+Users can adjust via conversation: "Mira, be more formal" → updates config
 
 ---
 
@@ -173,7 +173,7 @@ Users can adjust via conversation: "Pii-chan, be more formal" → updates config
 ┌─────────────────────────────────────────────────────────────┐
 │                        Car (Pi 5)                           │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │                   Pii-chan Node                        │ │
+│  │                   Mira Node                        │ │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │ │
 │  │  │ Wake Word    │  │ Voice I/O    │  │ Display      │  │ │
 │  │  │(OpenWakeWord)│  │(Vosk+Piper)  │  │ (Face)       │  │ │
@@ -326,7 +326,7 @@ I can still help with car controls — want me to adjust the climate?"
 
 **When to upgrade:**
 - Tired of hotspot toggle
-- Want Pii-chan to work without phone
+- Want Mira to work without phone
 - ~$10-15/mo acceptable
 
 **Hardware:** Waveshare SIM7600 or Sixfab 4G HAT
@@ -338,7 +338,7 @@ I can still help with car controls — want me to adjust the climate?"
 ### Climate Control
 - Sniff Sienna/4Runner HVAC CAN messages
 - Implement climate_set commands
-- "Pii-chan, set rear to feet only"
+- "Mira, set rear to feet only"
 - "I'm cold" → raises temp intelligently
 
 ### Always-Listening Mode
@@ -418,17 +418,17 @@ This is the gating phase. Everything hinges on this working.
 
 **Success criteria:**
 - [ ] `openclaw node run` connects to AWS gateway
-- [ ] "Hey Pii-chan" wakes reliably
+- [ ] "Hey Mira" wakes reliably
 - [ ] Voice → Response → Audio in < 5 seconds
 - [ ] Fallback mode works when disconnected
-- [ ] Display shows Pii-chan face/status
+- [ ] Display shows Mira face/status
 
 **Go/No-Go:** If this fails, debug before proceeding.
 
 ---
 
 ### Phase 2: CAN Integration (Read)
-**Goal:** Pii-chan knows what the car is doing
+**Goal:** Mira knows what the car is doing
 
 **What to build:**
 - CAN HAT reading real Toyota CAN data
@@ -436,7 +436,7 @@ This is the gating phase. Everything hinges on this working.
 - Expose car state to conversation context
 - "How's my battery?" → real answer
 
-**Success:** Pii-chan accurately reports vehicle state
+**Success:** Mira accurately reports vehicle state
 
 ---
 

@@ -1,5 +1,5 @@
 """
-Tests for Pii-chan's brain
+Tests for Mira's brain
 """
 import pytest
 import time

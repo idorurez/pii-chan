@@ -26,7 +26,7 @@ Update `MEMORY.md` periodically with:
 - Vehicle data updates in real-time
 
 ### Voice
-- Wake word: "Hey Pii-chan"
+- Wake word: "Hey Mira"
 - TTS for responses (keep them SHORT)
 - Listen for commands
 

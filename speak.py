@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-TTS script for Pii-chan - speak text out loud.
-Called from gateway via: nodes invoke --node piichan --command system.run --params '{"command":["python3","speak.py","Hello!"]}'
+TTS script for Mira - speak text out loud.
+Called from gateway via: nodes invoke --node mira --command system.run --params '{"command":["python3","speak.py","Hello!"]}'
 """
 
 import sys
@@ -11,7 +11,7 @@ import os
 # Paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 VOICE_MODEL = os.path.join(SCRIPT_DIR, "voices", "en_US-lessac-medium.onnx")
-OUTPUT_FILE = "/tmp/pii_speak.wav"
+OUTPUT_FILE = "/tmp/mira_speak.wav"
 
 def speak(text):
     """Convert text to speech and play it."""

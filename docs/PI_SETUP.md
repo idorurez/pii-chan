@@ -20,9 +20,9 @@ Get your Raspberry Pi running as an OpenClaw node connected to your gateway.
    - **OS:** Raspberry Pi OS (64-bit) — the full version, not Lite
    - **Storage:** Your SD card
 3. Click ⚙️ (gear icon) **before writing** and configure:
-   - ✅ Set hostname: `piichan`
+   - ✅ Set hostname: `mira`
    - ✅ Enable SSH (use password authentication)
-   - ✅ Set username: `piichan` (match the hostname for simplicity)
+   - ✅ Set username: `mira` (match the hostname for simplicity)
    - ✅ Set password: (pick something secure)
    - ✅ Configure WiFi: your home network SSID + password
    - ✅ Set locale: your timezone
@@ -38,10 +38,10 @@ Get your Raspberry Pi running as an OpenClaw node connected to your gateway.
 
 ```bash
 # Try mDNS first
-ssh piichan@piichan.local
+ssh mira@mira.local
 
 # If that doesn't work, find the IP from your router or scan:
-nmap -sn 192.168.1.0/24 | grep -B2 "raspberry\|piichan"
+nmap -sn 192.168.1.0/24 | grep -B2 "raspberry\|mira"
 ```
 
 ### Initial System Setup
@@ -108,18 +108,18 @@ openclaw --version
 ⚠️ **IMPORTANT:** The service file MUST have proper section headers (`[Unit]`, `[Service]`, `[Install]`). Missing brackets will silently fail!
 
 ```bash
-sudo tee /etc/systemd/system/piichan.service << 'EOF'
+sudo tee /etc/systemd/system/mira.service << 'EOF'
 [Unit]
-Description=Pii-chan OpenClaw Node
+Description=Mira OpenClaw Node
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=piichan
+User=mira
 Environment=OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
 Environment=OPENCLAW_GATEWAY_TOKEN=YOUR_GATEWAY_TOKEN_HERE
-ExecStart=/home/piichan/.npm-global/bin/openclaw node run --host YOUR_GATEWAY_TAILSCALE_IP --port 18789 --display-name piichan
+ExecStart=/home/mira/.npm-global/bin/openclaw node run --host YOUR_GATEWAY_TAILSCALE_IP --port 18789 --display-name mira
 Restart=always
 RestartSec=10
 
@@ -139,7 +139,7 @@ Tailscale encrypts the transport, so we don't need TLS on the WebSocket. This en
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable piichan
+sudo systemctl enable mira
 ```
 
 **Don't start it yet** — we need to approve the pairing first.
@@ -151,8 +151,8 @@ sudo systemctl enable piichan
 ### Start the Service
 
 ```bash
-sudo systemctl start piichan
-sudo journalctl -u piichan -f
+sudo systemctl start mira
+sudo journalctl -u mira -f
 ```
 
 The first connection will fail with "pairing required" — this is expected.
@@ -173,7 +173,7 @@ You'll see something like:
     "requestId": "abc123-request-id",
     "deviceId": "9ebb2619f0d0e278...",
     "publicKey": "pPvuYs_I1uk...",
-    "displayName": "piichan",
+    "displayName": "mira",
     "role": "node",
     ...
   }
@@ -237,18 +237,18 @@ OpenClaw uses a cryptographic identity system:
 **Every time you SSH in and want to work with voice tools:**
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 source venv/bin/activate
 ```
 
-Your prompt will change to `(venv) piichan@piichan:~/pii-chan $`
+Your prompt will change to `(venv) mira@mira:~/mira $`
 
 ### Create Python Virtual Environment
 
 Raspberry Pi OS requires a venv for pip packages:
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 python3 -m venv venv
 source venv/bin/activate
 
@@ -259,7 +259,7 @@ pip install piper-tts vosk openwakeword sounddevice scipy pathvalidate
 ### Download Vosk Model (Speech-to-Text)
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 mkdir -p models && cd models
 wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
 unzip vosk-model-small-en-us-0.15.zip
@@ -270,7 +270,7 @@ cd ..
 ### Download Piper Voice (Text-to-Speech)
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 mkdir -p voices && cd voices
 wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
 wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
@@ -298,16 +298,16 @@ aplay test.wav
 ### Test TTS (Piper)
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 source venv/bin/activate
-echo "Hello! I am Pii-chan, your car companion." | piper --model voices/en_US-lessac-medium.onnx --output_file hello.wav
+echo "Hello! I am Mira, your car companion." | piper --model voices/en_US-lessac-medium.onnx --output_file hello.wav
 aplay hello.wav  # if speakers connected
 ```
 
 ### Test STT (Vosk)
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 source venv/bin/activate
 
 # Record 3 seconds
@@ -414,8 +414,8 @@ Remote commands from the gateway require an allowlist on the Pi. Edit `~/.opencl
         {"pattern": "/usr/bin/candump"},
         {"pattern": "/usr/bin/cansend"},
         {"pattern": "/usr/sbin/alsactl"},
-        {"pattern": "/home/piichan/.local/bin/*"},
-        {"pattern": "/home/piichan/pii-chan/speak.sh"}
+        {"pattern": "/home/mira/.local/bin/*"},
+        {"pattern": "/home/mira/mira/speak.sh"}
       ]
     }
   }
@@ -430,7 +430,7 @@ The wildcard `*` allows any command in that directory (useful for pip-installed 
 
 ```bash
 # 1. Service running
-sudo systemctl status piichan
+sudo systemctl status mira
 
 # 2. TCP connection established
 ss -tnp | grep 18789
@@ -442,7 +442,7 @@ cat ~/.openclaw/identity/device.json | head -3
 arecord -d 3 test.wav && aplay test.wav
 
 # 5. Voice output (if configured)  
-echo "Hello from Pii-chan" | piper --model ~/piper-voices/en_US-lessac-medium.onnx --output_file test.wav && aplay test.wav
+echo "Hello from Mira" | piper --model ~/piper-voices/en_US-lessac-medium.onnx --output_file test.wav && aplay test.wav
 
 # 6. CAN interface (if HAT installed)
 ip link show can0
@@ -465,8 +465,8 @@ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues:
 ### SSH In and Activate Environment
 
 ```bash
-ssh piichan@piichan.local
-cd ~/pii-chan
+ssh mira@mira.local
+cd ~/mira
 source venv/bin/activate
 ```
 
@@ -495,7 +495,7 @@ python test_vosk.py
 
 From gateway:
 ```bash
-docker exec wintermute openclaw nodes invoke --node piichan --command system.run --params '{"command":["/home/piichan/pii-chan/speak.sh","Hello from the gateway!"]}'
+docker exec wintermute openclaw nodes invoke --node mira --command system.run --params '{"command":["/home/mira/mira/speak.sh","Hello from the gateway!"]}'
 ```
 
 ---
@@ -509,7 +509,7 @@ Claude Code can be installed for local AI-assisted development:
 npm install -g @anthropic-ai/claude-code
 
 # Run (requires API key or Max subscription)
-cd ~/pii-chan
+cd ~/mira
 source venv/bin/activate  # if working on voice stuff
 claude
 ```
@@ -517,7 +517,7 @@ claude
 Inside Claude Code:
 - Type `/model` to see available models
 - Use `claude --model claude-sonnet-4-5-20250514` to specify model
-- It has access to the pii-chan repo for context
+- It has access to the mira repo for context
 
 ---
 

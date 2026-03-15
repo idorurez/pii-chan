@@ -24,9 +24,9 @@ These are common Toyota CAN IDs. Exact values need validation on your vehicle.
 
 HVAC messages are not publicly documented. Use sniffing workflow to decode:
 
-1. `piichan sniff --duration 30 > baseline.json`
+1. `mira sniff --duration 30 > baseline.json`
 2. Toggle climate control
-3. `piichan sniff --duration 30 > with_change.json`
+3. `mira sniff --duration 30 > with_change.json`
 4. Diff to find changed message IDs
 
 Suspected range: 0x500-0x5FF (body CAN)

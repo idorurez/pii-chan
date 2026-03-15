@@ -362,7 +362,7 @@ add({
     "id": 18, "type": "SaveImage",
     "pos": [1950, 200], "size": [400, 400],
     "properties": {"Node name for S&R": "SaveImage"},
-    "widgets_values": ["pii-chan_tpose_full"],
+    "widgets_values": ["mira_tpose_full"],
     "inputs": [{"name": "images", "type": "IMAGE", "link": l_img_full}],
     "title": "Save FULL T-Pose Image"
 })
@@ -389,7 +389,7 @@ add({
     "id": 20, "type": "SaveImage",
     "pos": [2350, 600], "size": [400, 400],
     "properties": {"Node name for S&R": "SaveImage"},
-    "widgets_values": ["pii-chan_tpose_head"],
+    "widgets_values": ["mira_tpose_head"],
     "inputs": [{"name": "images", "type": "IMAGE", "link": l_img_save_crop}],
     "title": "Save CROPPED Head"
 })
@@ -400,7 +400,7 @@ out_links(19).append(l_img_save_crop)
 # NOTES
 # ═══════════════════════════════════════════════════════════════════════
 
-NOTE_TEXT = f"""=== PII-CHAN T-POSE REFERENCE (ControlNet) ===
+NOTE_TEXT = f"""=== MIRA T-POSE REFERENCE (ControlNet) ===
 
 This workflow uses ControlNet to FORCE a T-pose or A-pose.
 The pose comes from your reference skeleton image, not the prompt.
@@ -430,8 +430,8 @@ TUNING:
   - Lower = more artistic interpretation
 
 OUTPUTS:
-- pii-chan_tpose_full_*.png → Full body for Inochi2D rigging
-- pii-chan_tpose_head_*.png → Cropped head
+- mira_tpose_full_*.png → Full body for Inochi2D rigging
+- mira_tpose_head_*.png → Cropped head
 """
 
 add({
@@ -493,7 +493,7 @@ workflow = {
     "version": 0.4,
 }
 
-out_path = __file__.replace("generate_reference_controlnet_workflow.py", "pii-chan_flux_tpose_controlnet.json")
+out_path = __file__.replace("generate_reference_controlnet_workflow.py", "mira_flux_tpose_controlnet.json")
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(workflow, f, indent=2, ensure_ascii=False)
 

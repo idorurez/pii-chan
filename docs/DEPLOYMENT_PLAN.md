@@ -1,6 +1,6 @@
-# Pii-chan Deployment Plan
+# Mira Deployment Plan
 
-How to make Pii-chan a real OpenClaw node that you can just get in the car and use.
+How to make Mira a real OpenClaw node that you can just get in the car and use.
 
 ## 1. Architecture: Pi as OpenClaw Node
 
@@ -63,20 +63,20 @@ The skill teaches Claude how to use the CAN tools:
 # SKILL.md
 ---
 name: car-control
-description: Control vehicle CAN bus (climate, state). Use when user asks about car temperature, HVAC, or vehicle state. Requires pii-chan node to be connected.
+description: Control vehicle CAN bus (climate, state). Use when user asks about car temperature, HVAC, or vehicle state. Requires mira node to be connected.
 ---
 
 ## Tools Available (via node exec)
 
 ### Read Vehicle State
-`piichan read-state`
+`mira read-state`
 Returns: JSON with speed, gear, battery, climate settings, etc.
 
 ### Set Climate
-`piichan climate --zone <driver|passenger|rear|all> --temp <60-85> --mode <auto|face|feet|both|defrost> --sync <on|off>`
+`mira climate --zone <driver|passenger|rear|all> --temp <60-85> --mode <auto|face|feet|both|defrost> --sync <on|off>`
 
 ### Sniff CAN Traffic
-`piichan sniff --duration 30 --filter <hex-id>`
+`mira sniff --duration 30 --filter <hex-id>`
 Captures CAN messages for reverse engineering.
 ```
 
@@ -162,7 +162,7 @@ When Pi powers on:
 
 2. **OpenClaw node start**:
    - Connects to gateway automatically
-   - Announces itself: "Pii-chan online"
+   - Announces itself: "Mira online"
 
 3. **Voice ready**:
    - Wake word listener active
@@ -171,9 +171,9 @@ When Pi powers on:
 ### systemd Service
 
 ```ini
-# /etc/systemd/system/piichan.service
+# /etc/systemd/system/mira.service
 [Unit]
-Description=Pii-chan OpenClaw Node
+Description=Mira OpenClaw Node
 After=network-online.target
 Wants=network-online.target
 
@@ -181,7 +181,7 @@ Wants=network-online.target
 Type=simple
 User=pi
 Environment=OPENCLAW_GATEWAY_TOKEN=<token>
-ExecStart=/usr/local/bin/openclaw node run --host gateway.example.com --port 18789 --display-name "Pii-chan"
+ExecStart=/usr/local/bin/openclaw node run --host gateway.example.com --port 18789 --display-name "Mira"
 Restart=always
 RestartSec=10
 
@@ -202,7 +202,7 @@ WantedBy=multi-user.target
 After initial setup, daily use is:
 
 1. **Get in car** → Pi auto-boots from 12V power
-2. **Say wake word** or press button → "Hey Pii-chan"
+2. **Say wake word** or press button → "Hey Mira"
 3. **Talk** → Full OpenClaw via voice
 
 No app to open, no pairing to do, no settings to configure.
@@ -323,7 +323,7 @@ network={
 - Sixfab IoT SIM: Pay-as-you-go
 - Google Fi data-only SIM: ~$10/GB
 
-**Good for**: If you want Pii-chan to work without any phone interaction ever.
+**Good for**: If you want Mira to work without any phone interaction ever.
 
 ---
 
@@ -385,7 +385,7 @@ network={
 
 1. ✅ Document architecture (this file)
 2. ⏳ Create car-control skill
-3. ⏳ Build `piichan` CLI wrapper for CAN operations
+3. ⏳ Build `mira` CLI wrapper for CAN operations
 4. ⏳ Test node connection flow
 5. ⏳ Order hardware
 6. ⏳ Sniff HVAC CAN messages

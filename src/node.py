@@ -69,7 +69,7 @@ class OpenClawNode:
         # Node config
         node = json.loads(node_json.read_text())
         self._node_id = node["nodeId"]
-        self._display_name = node.get("displayName", "piichan")
+        self._display_name = node.get("displayName", "mira")
         gw = node.get("gateway", {})
         self._gateway_host = gw.get("host", "100.112.61.98")
         self._gateway_port = gw.get("port", 18789)
@@ -263,7 +263,7 @@ class OpenClawNode:
 
     # ---- Public API ----
 
-    async def send_voice_transcript(self, text: str, agent: str = "agent:pii-chan:main"):
+    async def send_voice_transcript(self, text: str, agent: str = "agent:mira:main"):
         """Send a voice transcript to the gateway for Claude to respond to.
 
         The sessionKey determines which agent handles the message.

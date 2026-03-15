@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pii-chan Face</title>
+    <title>Mira Face</title>
     <style>
         * {
             margin: 0;
@@ -336,7 +336,7 @@
         </div>
     </div>
     
-    <div class="status">Pii-chan</div>
+    <div class="status">Mira</div>
     
     <div class="debug" id="debug">
         <div>Expression Test:</div>
@@ -424,7 +424,7 @@
             
             ws.onopen = () => {
                 console.log('Face WebSocket connected');
-                document.querySelector('.status').textContent = 'Pii-chan (connected)';
+                document.querySelector('.status').textContent = 'Mira (connected)';
             };
             
             ws.onmessage = (event) => {
@@ -438,7 +438,7 @@
             
             ws.onclose = () => {
                 console.log('WebSocket closed, reconnecting...');
-                document.querySelector('.status').textContent = 'Pii-chan (disconnected)';
+                document.querySelector('.status').textContent = 'Mira (disconnected)';
                 setTimeout(connectWebSocket, 2000);
             };
             

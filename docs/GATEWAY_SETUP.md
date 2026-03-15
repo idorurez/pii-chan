@@ -1,6 +1,6 @@
-# Gateway Setup for Pii-chan
+# Gateway Setup for Mira
 
-Pii-chan runs as a **separate agent** on your existing OpenClaw gateway, with the Pi as a **node** providing local capabilities (voice, CAN bus).
+Mira runs as a **separate agent** on your existing OpenClaw gateway, with the Pi as a **node** providing local capabilities (voice, CAN bus).
 
 ## Architecture
 
@@ -8,8 +8,8 @@ Pii-chan runs as a **separate agent** on your existing OpenClaw gateway, with th
 ┌─────────────────────────────────────────────────────────────┐
 │                    AWS Gateway (Docker)                      │
 │  ┌─────────────────────┐  ┌─────────────────────────────┐   │
-│  │   Wintermute Agent  │  │     Pii-chan Agent          │   │
-│  │   (main workspace)  │  │   (pii-chan-workspace)      │   │
+│  │   Wintermute Agent  │  │     Mira Agent          │   │
+│  │   (main workspace)  │  │   (mira-workspace)      │   │
 │  │                     │  │                             │   │
 │  │   SOUL.md           │  │   SOUL.md (car personality) │   │
 │  │   MEMORY.md         │  │   MEMORY.md (drive history) │   │
@@ -116,47 +116,47 @@ docker compose down && docker compose up -d
 
 ---
 
-## Step 4: Create Pii-chan Workspace
+## Step 4: Create Mira Workspace
 
 ```bash
 # On the gateway HOST (not inside container)
-mkdir -p ~/.openclaw/pii-chan-workspace
+mkdir -p ~/.openclaw/mira-workspace
 
 # Clone repo and copy template files
-git clone https://github.com/idorurez/pii-chan.git /tmp/pii-chan
-cp /tmp/pii-chan/workspace-template/* ~/.openclaw/pii-chan-workspace/
+git clone https://github.com/idorurez/mira.git /tmp/mira
+cp /tmp/mira/workspace-template/* ~/.openclaw/mira-workspace/
 
 # Fix permissions (container runs as uid 1000)
-sudo chown -R 1000:1000 ~/.openclaw/pii-chan-workspace/
+sudo chown -R 1000:1000 ~/.openclaw/mira-workspace/
 
 # Verify
-ls ~/.openclaw/pii-chan-workspace/
+ls ~/.openclaw/mira-workspace/
 # Should show: AGENTS.md  HEARTBEAT.md  IDENTITY.md  MEMORY.md  SOUL.md  USER.md
 ```
 
 ---
 
-## Step 5: Register Pii-chan Agent
+## Step 5: Register Mira Agent
 
 ```bash
 # Inside container
-docker exec -w /app wintermute node dist/index.js agents add pii-chan \
-  --workspace /home/node/.openclaw/pii-chan-workspace
+docker exec -w /app wintermute node dist/index.js agents add mira \
+  --workspace /home/node/.openclaw/mira-workspace
 ```
 
 Verify:
 ```bash
 docker exec -w /app wintermute node dist/index.js agents list
-# Should show: main (default), pii-chan
+# Should show: main (default), mira
 ```
 
 ---
 
-## Step 6: Install Pii-chan Skill (Optional)
+## Step 6: Install Mira Skill (Optional)
 
 ```bash
-cp -r /tmp/pii-chan/skills/car-control ~/.openclaw/skills/
-rm -rf /tmp/pii-chan
+cp -r /tmp/mira/skills/car-control ~/.openclaw/skills/
+rm -rf /tmp/mira
 ```
 
 ---
@@ -180,7 +180,7 @@ These are JSON objects keyed by `deviceId`:
     "requestId": "request-uuid",
     "deviceId": "sha256-hash-of-public-key",
     "publicKey": "base64-ed25519-public-key",
-    "displayName": "piichan",
+    "displayName": "mira",
     "role": "node",
     ...
   }
@@ -193,7 +193,7 @@ These are JSON objects keyed by `deviceId`:
   "sha256-hash-of-public-key": {
     "deviceId": "sha256-hash-of-public-key",
     "publicKey": "base64-ed25519-public-key",
-    "displayName": "piichan",
+    "displayName": "mira",
     ...
     "tokens": {
       "node": {
@@ -244,8 +244,8 @@ docker logs wintermute --tail 100 | grep "100.76.12.120"
 | Item | Location on Host | Survives Compose |
 |------|------------------|------------------|
 | Agent config | `~/.openclaw/openclaw.json` | ✅ Yes |
-| Pii-chan workspace | `~/.openclaw/pii-chan-workspace/` | ✅ Yes |
-| Pii-chan memories | `~/.openclaw/pii-chan-workspace/MEMORY.md` | ✅ Yes |
+| Mira workspace | `~/.openclaw/mira-workspace/` | ✅ Yes |
+| Mira memories | `~/.openclaw/mira-workspace/MEMORY.md` | ✅ Yes |
 | Skills | `~/.openclaw/skills/` | ✅ Yes |
 | Device pairing | `~/.openclaw/devices/` | ✅ Yes |
 | Gateway identity | `~/.openclaw/identity/` | ✅ Yes |
@@ -256,9 +256,9 @@ docker logs wintermute --tail 100 | grep "100.76.12.120"
 
 ## Separate Contexts
 
-| Aspect | Wintermute | Pii-chan |
+| Aspect | Wintermute | Mira |
 |--------|------------|----------|
-| Workspace | `~/.openclaw/workspace/` | `~/.openclaw/pii-chan-workspace/` |
+| Workspace | `~/.openclaw/workspace/` | `~/.openclaw/mira-workspace/` |
 | Personality | Your main assistant | Car spirit |
 | Memory | Discord, projects, life | Drives, car stuff |
 | Channels | Discord, Signal, etc. | Voice from car node |

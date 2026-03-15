@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues and solutions for Pii-chan node setup.
+Common issues and solutions for Mira node setup.
 
 ---
 
@@ -21,7 +21,7 @@ Common issues and solutions for Pii-chan node setup.
 
 **Symptom:**
 ```
-systemd[1]: /etc/systemd/system/piichan.service:1: Assignment outside of section. Ignoring.
+systemd[1]: /etc/systemd/system/mira.service:1: Assignment outside of section. Ignoring.
 ```
 
 **Cause:** The service file is missing section brackets.
@@ -29,30 +29,30 @@ systemd[1]: /etc/systemd/system/piichan.service:1: Assignment outside of section
 **Wrong:**
 ```ini
 Unit
-Description=Pii-chan
+Description=Mira
 ```
 
 **Correct:**
 ```ini
 [Unit]
-Description=Pii-chan
+Description=Mira
 ```
 
 **Fix:**
 ```bash
 # Recreate the service file with proper brackets
-sudo tee /etc/systemd/system/piichan.service << 'EOF'
+sudo tee /etc/systemd/system/mira.service << 'EOF'
 [Unit]
-Description=Pii-chan OpenClaw Node
+Description=Mira OpenClaw Node
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=piichan
+User=mira
 Environment=OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
 Environment=OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN
-ExecStart=/home/piichan/.npm-global/bin/openclaw node run --host YOUR_GATEWAY_IP --port 18789 --display-name piichan
+ExecStart=/home/mira/.npm-global/bin/openclaw node run --host YOUR_GATEWAY_IP --port 18789 --display-name mira
 Restart=always
 RestartSec=10
 
@@ -61,7 +61,7 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl restart piichan
+sudo systemctl restart mira
 ```
 
 ### Service Shows "node host PATH" Then Exits
@@ -81,10 +81,10 @@ ss -tnp | grep 18789
 
 If no TCP connection, the node is failing silently. Run manually to see errors:
 ```bash
-sudo systemctl stop piichan
+sudo systemctl stop mira
 OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1 OPENCLAW_GATEWAY_TOKEN="your-token" \
-  /home/piichan/.npm-global/bin/openclaw node run \
-  --host YOUR_GATEWAY_IP --port 18789 --display-name piichan 2>&1
+  /home/mira/.npm-global/bin/openclaw node run \
+  --host YOUR_GATEWAY_IP --port 18789 --display-name mira 2>&1
 ```
 
 ---
@@ -175,7 +175,7 @@ RestartSec=10
 
 If the service is restarting too often, check:
 ```bash
-sudo journalctl -u piichan --since "1 hour ago" | grep -i "error\|fail\|closed"
+sudo journalctl -u mira --since "1 hour ago" | grep -i "error\|fail\|closed"
 ```
 
 ---
@@ -201,7 +201,7 @@ cat << 'EOF' > /tmp/paired_new.json
   "DEVICE_ID_HERE": {
     "deviceId": "DEVICE_ID_HERE",
     "publicKey": "PUBLIC_KEY_HERE",
-    "displayName": "piichan",
+    "displayName": "mira",
     "platform": "linux",
     "clientId": "node-host",
     "clientMode": "node",
@@ -236,7 +236,7 @@ docker cp /tmp/empty.json wintermute:/home/node/.openclaw/devices/pending.json
 
 ```bash
 # On Pi
-sudo systemctl restart piichan
+sudo systemctl restart mira
 ```
 
 The gateway will issue a token on the next successful connection.
@@ -348,13 +348,13 @@ docker exec wintermute openclaw devices approve <requestId>
 
 ```bash
 # Service status
-sudo systemctl status piichan
+sudo systemctl status mira
 
 # Recent logs
-sudo journalctl -u piichan --no-pager -n 50
+sudo journalctl -u mira --no-pager -n 50
 
 # Live log tail
-sudo journalctl -u piichan -f
+sudo journalctl -u mira -f
 
 # Process check
 ps aux | grep openclaw
@@ -444,10 +444,10 @@ If everything is broken and you need to start fresh:
 
 ```bash
 # On Pi
-sudo systemctl stop piichan
+sudo systemctl stop mira
 rm -rf ~/.openclaw/identity/
 rm -f ~/.openclaw/node.json
-sudo systemctl start piichan
+sudo systemctl start mira
 
 # Then re-approve on gateway
 ```

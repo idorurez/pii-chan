@@ -1,5 +1,5 @@
 #!/bin/bash
-# Download the LLM model for Pii-chan
+# Download the LLM model for Mira
 # Qwen 2.5 1.5B Instruct (Q4_K_M quantization, ~1.1GB)
 
 MODEL_DIR="./models"

@@ -1,9 +1,9 @@
 #!/bin/bash
-# 🐣 ピーちゃん Setup Script
+# 🐣 ミラ Setup Script
 
 set -e
 
-echo "🐣 Setting up ピーちゃん (Pii-chan)..."
+echo "🐣 Setting up ミラ (Mira)..."
 echo
 
 # Create virtual environment

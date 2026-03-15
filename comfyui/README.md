@@ -1,8 +1,8 @@
-# ComfyUI Workflows for Pii-chan
+# ComfyUI Workflows for Mira
 
 ## Workflows
 
-### `pii-chan_expression_workflow.json`
+### `mira_expression_workflow.json`
 
 IP-Adapter based workflow for generating consistent character expressions.
 
@@ -32,16 +32,16 @@ Install via ComfyUI Manager:
 
 ### Step 1: Create Your Reference Character
 
-Generate or create your ideal Pii-chan design:
+Generate or create your ideal Mira design:
 - Cute mascot/anime style
 - Simple, clean design
 - Front-facing, centered
-- Save as `pii-chan_reference.png`
+- Save as `mira_reference.png`
 
 ### Step 2: Load Workflow
 
 1. Open ComfyUI
-2. Drag `pii-chan_expression_workflow.json` onto the canvas
+2. Drag `mira_expression_workflow.json` onto the canvas
 3. Load your reference image in the "Reference Character Image" node
 4. Update model paths if needed
 
@@ -61,20 +61,20 @@ Edit the `[EXPRESSION: ...]` part in the positive prompt:
 | excited | `[EXPRESSION: very happy, excited, sparkle eyes, grin, jumping]` |
 | confused | `[EXPRESSION: confused, head tilt, raised eyebrow, question mark]` |
 
-### Step 4: Export for Pii-chan
+### Step 4: Export for Mira
 
 Rename outputs and place in `ui/sprites/`:
 
 ```
-pii-chan_neutral.png
-pii-chan_happy.png
-pii-chan_sad.png
-pii-chan_surprised.png
-pii-chan_thinking.png
-pii-chan_sleepy.png
-pii-chan_talking.png
-pii-chan_excited.png
-pii-chan_confused.png
+mira_neutral.png
+mira_happy.png
+mira_sad.png
+mira_surprised.png
+mira_thinking.png
+mira_sleepy.png
+mira_talking.png
+mira_excited.png
+mira_confused.png
 ```
 
 ## Tips

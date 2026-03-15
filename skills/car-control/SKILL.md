@@ -1,25 +1,25 @@
 ---
 name: car-control
-description: Control vehicle CAN bus for climate, read vehicle state, and assist with CAN reverse engineering. Use when user asks about car temperature, HVAC settings, vehicle state (speed, battery, gear), or wants to decode CAN messages. Requires pii-chan node to be online.
+description: Control vehicle CAN bus for climate, read vehicle state, and assist with CAN reverse engineering. Use when user asks about car temperature, HVAC settings, vehicle state (speed, battery, gear), or wants to decode CAN messages. Requires mira node to be online.
 ---
 
 # Car Control Skill
 
-Controls the vehicle via CAN bus through the pii-chan node.
+Controls the vehicle via CAN bus through the mira node.
 
 ## Prerequisites
 
-- Pii-chan node must be connected (`openclaw nodes status`)
-- Node name: `pii-chan` (or as configured)
+- Mira node must be connected (`openclaw nodes status`)
+- Node name: `mira` (or as configured)
 
 ## Available Commands
 
-All commands run via `nodes run --node pii-chan`:
+All commands run via `nodes run --node mira`:
 
 ### Read Vehicle State
 
 ```bash
-openclaw nodes run --node pii-chan -- piichan state
+openclaw nodes run --node mira -- mira state
 ```
 
 Returns JSON with:
@@ -31,7 +31,7 @@ Returns JSON with:
 ### Set Climate
 
 ```bash
-openclaw nodes run --node pii-chan -- piichan climate [options]
+openclaw nodes run --node mira -- mira climate [options]
 ```
 
 Options:
@@ -44,25 +44,25 @@ Options:
 Examples:
 ```bash
 # Set rear to feet only, 72°F
-piichan climate --zone rear --mode feet --temp 72 --sync off
+mira climate --zone rear --mode feet --temp 72 --sync off
 
 # Turn on defrost
-piichan climate --mode defrost --fan 5
+mira climate --mode defrost --fan 5
 
 # "I'm cold" → raise driver temp
-piichan climate --zone driver --temp 74
+mira climate --zone driver --temp 74
 ```
 
 ### Turn Climate Off
 
 ```bash
-openclaw nodes run --node pii-chan -- piichan climate-off
+openclaw nodes run --node mira -- mira climate-off
 ```
 
 ### Sniff CAN Traffic (Reverse Engineering)
 
 ```bash
-openclaw nodes run --node pii-chan -- piichan sniff [options]
+openclaw nodes run --node mira -- mira sniff [options]
 ```
 
 Options:
@@ -76,12 +76,12 @@ Returns summary of all captured message IDs with sample data.
 
 When user wants to decode a new CAN message:
 
-1. **Baseline capture**: `piichan sniff --duration 30 > baseline.json`
+1. **Baseline capture**: `mira sniff --duration 30 > baseline.json`
 2. **Prompt user**: "Toggle the control you want to decode"
-3. **Action capture**: `piichan sniff --duration 30 > action.json`
+3. **Action capture**: `mira sniff --duration 30 > action.json`
 4. **Diff analysis**: Compare captures to find changed messages
 5. **Identify candidates**: Messages that changed during action
-6. **Test replay**: `piichan can-write <id> <data>` to validate
+6. **Test replay**: `mira can-write <id> <data>` to validate
 
 ## Known CAN IDs (Toyota Sienna 2025)
 
@@ -99,15 +99,15 @@ HVAC messages: See `references/hvac_commands.md` (to be decoded via sniffing)
 
 | User Input | Command |
 |------------|---------|
-| "How's the car?" | `piichan state` |
+| "How's the car?" | `mira state` |
 | "I'm cold" / "I'm hot" | Adjust climate ±2-3°F |
-| "Set rear to feet" | `piichan climate --zone rear --mode feet --sync off` |
-| "Turn off climate" | `piichan climate-off` |
-| "Sync climate" | `piichan climate --sync on` |
-| "What's my battery at?" | `piichan state` → report battery_soc |
+| "Set rear to feet" | `mira climate --zone rear --mode feet --sync off` |
+| "Turn off climate" | `mira climate-off` |
+| "Sync climate" | `mira climate --sync on` |
+| "What's my battery at?" | `mira state` → report battery_soc |
 
 ## Error Handling
 
-- **Node offline**: "Pii-chan isn't connected. Is the car on?"
+- **Node offline**: "Mira isn't connected. Is the car on?"
 - **CAN timeout**: "Can't reach the car's CAN bus. Check the connection."
 - **Unknown command**: "That climate control isn't decoded yet. Want to sniff it?"

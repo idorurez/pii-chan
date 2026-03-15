@@ -1,8 +1,8 @@
-# 🐣 ピーちゃん (Pii-chan)
+# 🐣 ミラ (Mira)
 
 **Your AI copilot in the car — OpenClaw with a face and vehicle awareness.**
 
-Pii-chan is an OpenClaw node that lives in your vehicle. Full Claude intelligence, voice control, tunable personality, and awareness of your car's state.
+Mira is an OpenClaw node that lives in your vehicle. Full Claude intelligence, voice control, tunable personality, and awareness of your car's state.
 
 > "Good morning! Traffic looks light today. You've got a meeting at 10."
 
@@ -10,7 +10,7 @@ Pii-chan is an OpenClaw node that lives in your vehicle. Full Claude intelligenc
 
 ## What Is This?
 
-Not another car chatbot. Pii-chan is:
+Not another car chatbot. Mira is:
 
 - **Your actual OpenClaw** — calendar, messages, reminders, web search, memory
 - **Car-aware** — knows speed, battery, doors, climate state
@@ -28,7 +28,7 @@ Not another car chatbot. Pii-chan is:
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and solutions |
 | [docs/RECONNECTION.md](docs/RECONNECTION.md) | Resilience, auto-recovery, monitoring |
 | [docs/CAN_SNIFFING_GUIDE.md](docs/CAN_SNIFFING_GUIDE.md) | Reverse engineering HVAC CAN |
-| [workspace-template/](workspace-template/) | Ready-to-deploy Pii-chan personality files |
+| [workspace-template/](workspace-template/) | Ready-to-deploy Mira personality files |
 
 ## MVP Scope
 
@@ -88,7 +88,7 @@ Not another car chatbot. Pii-chan is:
 ## Project Structure
 
 ```
-pii-chan/
+mira/
 ├── PRODUCT.md              # Product spec (start here)
 ├── README.md               # This file
 ├── config.example.yaml     # Example configuration
@@ -115,7 +115,7 @@ pii-chan/
 │   ├── PI_SETUP.md         # Raspberry Pi setup
 │   ├── GATEWAY_SETUP.md    # OpenClaw gateway setup
 │   └── CAN_SNIFFING_GUIDE.md
-└── workspace-template/     # Pii-chan agent workspace files
+└── workspace-template/     # Mira agent workspace files
 ```
 
 ## Status
@@ -165,4 +165,4 @@ MIT
 
 ---
 
-*Pii-chan: OpenClaw in your car.*
+*Mira: OpenClaw in your car.*

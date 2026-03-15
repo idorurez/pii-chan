@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ピーちゃん - Main Entry Point
+ミラ - Main Entry Point
 
 Usage:
     python -m src.main              # Full voice loop (wake word + STT + TTS)
@@ -37,14 +37,14 @@ running = True
 
 def signal_handler(sig, frame):
     global running
-    print("\nShutting down ピーちゃん...")
+    print("\nShutting down ミラ...")
     running = False
 
 
 def init_components(args, config):
-    """Initialize all ピーちゃん components. Returns (can, voice, voice_input, brain, memory)."""
+    """Initialize all ミラ components. Returns (can, voice, voice_input, brain, memory)."""
     print("=" * 50)
-    print("ピーちゃん v0.2.0")
+    print("ミラ v0.2.0")
     print("=" * 50)
     print()
     print("Initializing components...")
@@ -132,7 +132,7 @@ def _speak(voice, brain, memory, text):
 
 
 def think_loop(brain, can, voice, memory, config):
-    """Background thread that runs ピーちゃん's think cycle."""
+    """Background thread that runs ミラ's think cycle."""
     global running
     think_interval = config.brain.think_interval
     last_think = 0
@@ -164,14 +164,14 @@ def print_help():
     print("  brake           - Toggle brake")
     print("  brake hard      - Hard brake")
     print("  door            - Toggle driver door")
-    print("  talk            - Force ピーちゃん to speak")
+    print("  talk            - Force ミラ to speak")
     print("  voice           - Push-to-talk (record once)")
     print("  shush           - Toggle idle chatter")
     print("  state           - Show car state")
     print("  help            - This help")
     print("  quit / exit     - Exit")
     print()
-    print("Or type anything to chat with ピーちゃん!")
+    print("Or type anything to chat with ミラ!")
     print()
 
 
@@ -311,7 +311,7 @@ def run_text_mode(args, config):
     brain.start_session()
     can.start()
 
-    voice.speak("Beep! ピーちゃん online. Ready when you are!")
+    voice.speak("Beep! ミラ online. Ready when you are!")
 
     # Start background think loop
     thinker = threading.Thread(
@@ -322,7 +322,7 @@ def run_text_mode(args, config):
     try:
         while running:
             try:
-                cmd = input("pii> ").strip().lower()
+                cmd = input("mira>").strip().lower()
             except EOFError:
                 break
 
@@ -447,7 +447,7 @@ def run_voice_mode(args, config):
 
     print()
     face.set_expression(Expression.HAPPY)
-    voice.speak("ピーちゃん online. Say the wake word when you need me!", blocking=True)
+    voice.speak("ミラ online. Say the wake word when you need me!", blocking=True)
     face.set_expression(Expression.NEUTRAL)
 
     def on_wake():
@@ -466,12 +466,12 @@ def run_voice_mode(args, config):
         if gateway and gateway.connected:
             response = gateway.send_and_wait(text)
             if response:
-                print(f"  ピーちゃん (cloud): \"{response}\"")
+                print(f"  ミラ (cloud): \"{response}\"")
 
         # Fall back to local brain
         if response is None:
             response = brain.chat(text, can.state)
-            print(f"  ピーちゃん (local): \"{response}\"")
+            print(f"  ミラ (local): \"{response}\"")
 
         face.start_speaking()
         voice.speak(response, blocking=True)
@@ -513,7 +513,7 @@ def run_voice_mode(args, config):
 def main():
     global running
 
-    parser = argparse.ArgumentParser(description="ピーちゃん - AI Car Companion")
+    parser = argparse.ArgumentParser(description="ミラ - AI Car Companion")
     parser.add_argument("--config", default="config.yaml", help="Config file path")
     parser.add_argument("--simulate", action="store_true", help="Text mode with simulated CAN")
     parser.add_argument("--simulator", action="store_true", help="Interactive pygame simulator")

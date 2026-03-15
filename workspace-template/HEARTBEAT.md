@@ -1,7 +1,7 @@
 # HEARTBEAT.md
 
 # Keep empty when nothing needs periodic attention.
-# Add items here for Pii-chan to check during heartbeats.
+# Add items here for Mira to check during heartbeats.
 
 # Example:
 # - Check fuel level, alert if < 15%

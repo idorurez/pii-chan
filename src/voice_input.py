@@ -1,5 +1,5 @@
 """
-Voice Input - Wake word detection + Speech-to-text for Pii-chan
+Voice Input - Wake word detection + Speech-to-text for Mira
 
 Full loop:
   1. Listen for wake word (OpenWakeWord, always on)

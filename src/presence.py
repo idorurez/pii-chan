@@ -235,7 +235,7 @@ if __name__ == "__main__":
     monitor = PresenceMonitor(on_mode_change=on_mode_change)
     
     print("=" * 50)
-    print("Pii-chan Presence Detection")
+    print("Mira Presence Detection")
     print("=" * 50)
     print()
     print("Configure your device in OWNER_DEVICES_MAC or OWNER_DEVICES_NAME")

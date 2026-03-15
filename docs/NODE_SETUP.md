@@ -110,7 +110,7 @@ export OPENCLAW_GATEWAY_TOKEN="your-gateway-token-here"
 openclaw node run \
   --host 100.a.b.c \
   --port 18789 \
-  --display-name "pii-chan"
+  --display-name "mira"
 ```
 
 You should see:
@@ -133,17 +133,17 @@ openclaw nodes approve <requestId>
 openclaw nodes status
 ```
 
-You should see `pii-chan` listed as paired.
+You should see `mira` listed as paired.
 
 ### Step 8: Test the Connection
 
 From AWS gateway:
 ```bash
 # Run a command on the Pi
-openclaw nodes run --node pii-chan -- uname -a
+openclaw nodes run --node mira -- uname -a
 # Should return: Linux raspberrypi 6.x.x-v8+ aarch64 GNU/Linux
 
-openclaw nodes run --node pii-chan -- hostname
+openclaw nodes run --node mira -- hostname
 # Should return: raspberrypi (or your hostname)
 ```
 
@@ -170,7 +170,7 @@ export OPENCLAW_GATEWAY_TOKEN="your-gateway-token-here"
 openclaw node run \
   --host 127.0.0.1 \
   --port 18790 \
-  --display-name "pii-chan"
+  --display-name "mira"
 ```
 
 Then approve on AWS (same as Option A, Step 7).
@@ -186,7 +186,7 @@ export OPENCLAW_GATEWAY_TOKEN="your-gateway-token-here"
 openclaw node run \
   --host your-aws-public-ip \
   --port 18789 \
-  --display-name "pii-chan"
+  --display-name "mira"
 ```
 
 ⚠️ **Security warning:** This exposes your gateway to the internet. Use Tailscale instead.
@@ -222,7 +222,7 @@ sudo nano /etc/systemd/system/openclaw-node.service
 
 ```ini
 [Unit]
-Description=OpenClaw Node (Pii-chan)
+Description=OpenClaw Node (Mira)
 After=network-online.target tailscaled.service
 Wants=network-online.target
 
@@ -230,7 +230,7 @@ Wants=network-online.target
 Type=simple
 User=pi
 EnvironmentFile=/etc/openclaw/node.env
-ExecStart=/usr/bin/openclaw node run --host 100.a.b.c --port 18789 --display-name "pii-chan"
+ExecStart=/usr/bin/openclaw node run --host 100.a.b.c --port 18789 --display-name "mira"
 Restart=always
 RestartSec=10
 
@@ -258,7 +258,7 @@ journalctl -u openclaw-node -f
 
 ## Configure Exec Allowlist
 
-By default, the node won't execute arbitrary commands. Add allowlist entries for Pii-chan tools:
+By default, the node won't execute arbitrary commands. Add allowlist entries for Mira tools:
 
 ### On the Pi (Node Host)
 
@@ -271,8 +271,8 @@ Create or edit `~/.openclaw/exec-approvals.json`:
     "/usr/bin/candump",
     "/usr/bin/cansend",
     "/usr/bin/ip",
-    "/home/pi/pii-chan/piichan",
-    "/home/pi/pii-chan/venv/bin/python"
+    "/home/pi/mira/mira",
+    "/home/pi/mira/venv/bin/python"
   ]
 }
 ```
@@ -281,9 +281,9 @@ Create or edit `~/.openclaw/exec-approvals.json`:
 
 ```bash
 # On AWS gateway
-openclaw approvals allowlist add --node pii-chan "/usr/bin/candump"
-openclaw approvals allowlist add --node pii-chan "/usr/bin/cansend"
-openclaw approvals allowlist add --node pii-chan "/home/pi/pii-chan/piichan"
+openclaw approvals allowlist add --node mira "/usr/bin/candump"
+openclaw approvals allowlist add --node mira "/usr/bin/cansend"
+openclaw approvals allowlist add --node mira "/home/pi/mira/mira"
 ```
 
 ---
@@ -295,7 +295,7 @@ To make Claude automatically run commands on the Pi:
 ```bash
 # On AWS gateway
 openclaw config set tools.exec.host node
-openclaw config set tools.exec.node "pii-chan"
+openclaw config set tools.exec.node "mira"
 openclaw config set tools.exec.security allowlist
 ```
 
@@ -308,14 +308,14 @@ Now when Claude calls `exec`, it runs on the Pi.
 ### From Discord/Chat (via Claude)
 
 Ask Claude:
-> "Run `hostname` on pii-chan"
+> "Run `hostname` on mira"
 
 Claude should execute and return the Pi's hostname.
 
 ### Test CAN (if HAT installed)
 
 Ask Claude:
-> "Run `ip link show can0` on pii-chan"
+> "Run `ip link show can0` on mira"
 
 ---
 
@@ -351,7 +351,7 @@ Ask Claude:
 | Install CLI (Pi) | `sudo npm install -g openclaw` |
 | Connect (Pi) | `openclaw node run --host <IP> --port 18789` |
 | Approve (AWS) | `openclaw nodes approve <id>` |
-| Test (AWS) | `openclaw nodes run --node pii-chan -- hostname` |
+| Test (AWS) | `openclaw nodes run --node mira -- hostname` |
 | Install service (Pi) | See systemd section above |
 
 ---

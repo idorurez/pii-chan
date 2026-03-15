@@ -1,4 +1,4 @@
-# Pii-chan Shopping List
+# Mira Shopping List
 
 **Date:** 2025-03-06  
 **Purpose:** Phase 1 hardware for Pi validation
@@ -20,7 +20,7 @@
 
 | Item | Purpose | Est. Price | Link |
 |------|---------|------------|------|
-| ☐ **Waveshare 7" Touchscreen** | Config + Pii-chan face | $55 | [Amazon](https://amazon.com/dp/B07L6WT77H) / [Waveshare](https://waveshare.com) |
+| ☐ **Waveshare 7" Touchscreen** | Config + Mira face | $55 | [Amazon](https://amazon.com/dp/B07L6WT77H) / [Waveshare](https://waveshare.com) |
 
 *1024x600, HDMI input, USB touch, IPS panel*
 

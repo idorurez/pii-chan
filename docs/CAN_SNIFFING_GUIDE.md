@@ -1,6 +1,6 @@
 # CAN Bus Sniffing Guide for Toyota Sienna
 
-This guide covers how to reverse engineer CAN bus messages on your 2025 Toyota Sienna, specifically targeting HVAC (climate control) for Pii-chan integration.
+This guide covers how to reverse engineer CAN bus messages on your 2025 Toyota Sienna, specifically targeting HVAC (climate control) for Mira integration.
 
 ## Goal
 
@@ -32,7 +32,7 @@ Find the CAN message IDs and byte patterns for:
 - Buy: [canable.io](https://canable.io) or clone on Amazon/AliExpress
 
 ### Option 4: Raspberry Pi + CAN HAT
-- If you already have the Pii-chan Pi setup
+- If you already have the Mira Pi setup
 - Waveshare 2-CH CAN HAT
 - Direct socketcan integration
 
@@ -225,7 +225,7 @@ The car has multiple buses:
 
 OBD-II port typically connects to powertrain CAN. You may need to find body CAN access point.
 
-## Adding to Pii-chan
+## Adding to Mira
 
 Once you've documented the HVAC messages, add them to the DBC file:
 
@@ -239,7 +239,7 @@ BO_ 1344 CLIMATE_CONTROL: 8 XXX
  SG_ RECIRC : 33|1@0+ (1,0) [0|1] "" XXX
 ```
 
-Then add CAN write capability to Pii-chan:
+Then add CAN write capability to Mira:
 
 ```python
 # In can_reader.py, add write method

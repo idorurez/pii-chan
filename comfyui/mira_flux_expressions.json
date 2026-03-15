@@ -1,0 +1,4130 @@
+{
+  "last_node_id": 128,
+  "last_link_id": 130,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        -550,
+        -200
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "flux_dev.safetensors",
+        "default"
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Flux UNET"
+    },
+    {
+      "id": 2,
+      "type": "DualCLIPLoader",
+      "pos": [
+        -550,
+        -70
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "DualCLIPLoader"
+      },
+      "widgets_values": [
+        "t5xxl_fp16.safetensors",
+        "clip_l.safetensors",
+        "flux",
+        "default"
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Dual CLIP (Flux)"
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        -550,
+        120
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "ae.safetensors"
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            10,
+            25,
+            38,
+            51,
+            64,
+            77,
+            90,
+            103,
+            116,
+            129
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Flux VAE"
+    },
+    {
+      "id": 4,
+      "type": "LoraLoader",
+      "pos": [
+        -180,
+        -200
+      ],
+      "size": [
+        315,
+        126
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoader"
+      },
+      "widgets_values": [
+        "RM_Anime_Cyberpunk_v0.5M.safetensors",
+        1,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            4
+          ],
+          "slot_index": 1
+        }
+      ],
+      "title": "LoRA (character style)"
+    },
+    {
+      "id": 13,
+      "type": "LoraLoader",
+      "pos": [
+        -180,
+        -50
+      ],
+      "size": [
+        315,
+        126
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoader"
+      },
+      "widgets_values": [
+        "CHANGE_ME_expression_lora.safetensors",
+        1,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            5
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            16,
+            29,
+            42,
+            55,
+            68,
+            81,
+            94,
+            107,
+            120
+          ],
+          "slot_index": 1
+        }
+      ],
+      "title": "LoRA (expressions)"
+    },
+    {
+      "id": 5,
+      "type": "IPAdapterFluxLoader",
+      "pos": [
+        -180,
+        0
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {},
+      "widgets_values": [
+        "ip-adapter.bin",
+        "google/siglip-so400m-patch14-384",
+        "cuda"
+      ],
+      "outputs": [
+        {
+          "name": "ipadapterFlux",
+          "type": "IPADAPTERFLUX",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Load IP-Adapter Flux"
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        -180,
+        160
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "properties": {},
+      "widgets_values": [
+        "mira_reference.png",
+        "image"
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7,
+            9
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Reference Character Image"
+    },
+    {
+      "id": 7,
+      "type": "ApplyIPAdapterFlux",
+      "pos": [
+        200,
+        -100
+      ],
+      "size": [
+        280,
+        170
+      ],
+      "properties": {},
+      "widgets_values": [
+        0.95,
+        0.0,
+        1.0
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 5
+        },
+        {
+          "name": "ipadapter_flux",
+          "type": "IPADAPTERFLUX",
+          "link": 6
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Apply IP-Adapter (Character Lock)"
+    },
+    {
+      "id": 8,
+      "type": "ModelSamplingFlux",
+      "pos": [
+        200,
+        130
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ModelSamplingFlux"
+      },
+      "widgets_values": [
+        1.15,
+        0.5,
+        1024,
+        1024
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            14,
+            19,
+            27,
+            32,
+            40,
+            45,
+            53,
+            58,
+            66,
+            71,
+            79,
+            84,
+            92,
+            97,
+            105,
+            110,
+            118,
+            123
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "ModelSamplingFlux"
+    },
+    {
+      "id": 9,
+      "type": "LoadImage",
+      "pos": [
+        200,
+        350
+      ],
+      "size": [
+        315,
+        400
+      ],
+      "properties": {},
+      "widgets_values": [
+        "mira_reference.png",
+        "image"
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            12
+          ],
+          "slot_index": 1
+        }
+      ],
+      "title": "HEAD MASK (right-click → Open in MaskEditor)"
+    },
+    {
+      "id": 10,
+      "type": "VAEEncode",
+      "pos": [
+        550,
+        -100
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEEncode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "IMAGE",
+          "link": 9
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Encode Reference (img2img)"
+    },
+    {
+      "id": 11,
+      "type": "SetLatentNoiseMask",
+      "pos": [
+        550,
+        -30
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "SetLatentNoiseMask"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 11
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            23,
+            36,
+            49,
+            62,
+            75,
+            88,
+            101,
+            114,
+            127
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Head Mask (shared)"
+    },
+    {
+      "id": 12,
+      "type": "KSamplerSelect",
+      "pos": [
+        550,
+        40
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            22,
+            35,
+            48,
+            61,
+            74,
+            87,
+            100,
+            113,
+            126
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler (euler)"
+    },
+    {
+      "id": 14,
+      "type": "RandomNoise",
+      "pos": [
+        550,
+        110
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        42,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            20,
+            33,
+            46,
+            59,
+            72,
+            85,
+            98,
+            111,
+            124
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Noise (seed 42)"
+    },
+    {
+      "id": 120,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        -20
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (neutral)"
+    },
+    {
+      "id": 20,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        -200
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, calm relaxed expression, gentle slight smile"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "NEUTRAL"
+    },
+    {
+      "id": 30,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        -200
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            18
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (neutral)"
+    },
+    {
+      "id": 40,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        -120
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            21
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (neutral)"
+    },
+    {
+      "id": 50,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        -200
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 20
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 21
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 22
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 15
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            24
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (neutral)"
+    },
+    {
+      "id": 60,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        -170
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 24
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            26
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        -200
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_neutral"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 26
+        }
+      ],
+      "title": "Save: neutral"
+    },
+    {
+      "id": 121,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        330
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            28
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (happy)"
+    },
+    {
+      "id": 21,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        150
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, very happy expression, big warm smile, eyes closed with joy, blushing"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 29
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            30
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "HAPPY"
+    },
+    {
+      "id": 31,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        150
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            31
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (happy)"
+    },
+    {
+      "id": 41,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        230
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 32
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            34
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (happy)"
+    },
+    {
+      "id": 51,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        150
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 33
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 34
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 35
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 28
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            37
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (happy)"
+    },
+    {
+      "id": 61,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        180
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 37
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 38
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            39
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        150
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_happy"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 39
+        }
+      ],
+      "title": "Save: happy"
+    },
+    {
+      "id": 122,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        680
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 40
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            41
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (sad)"
+    },
+    {
+      "id": 22,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        500
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, sad expression, small frown, eyes looking down, small tear"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            43
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "SAD"
+    },
+    {
+      "id": 32,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        500
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 43
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            44
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (sad)"
+    },
+    {
+      "id": 42,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        580
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 45
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 44
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            47
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (sad)"
+    },
+    {
+      "id": 52,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        500
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 46
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 47
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 48
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 41
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            50
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (sad)"
+    },
+    {
+      "id": 62,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        530
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 50
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 51
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            52
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        500
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_sad"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 52
+        }
+      ],
+      "title": "Save: sad"
+    },
+    {
+      "id": 123,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        1030
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 53
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            54
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (surprised)"
+    },
+    {
+      "id": 23,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        850
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, surprised expression, eyes wide open, mouth open in shock"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 55
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            56
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "SURPRISED"
+    },
+    {
+      "id": 33,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        850
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 56
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            57
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (surprised)"
+    },
+    {
+      "id": 43,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        930
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 58
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 57
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            60
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (surprised)"
+    },
+    {
+      "id": 53,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        850
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 59
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 60
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 61
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 54
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 62
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            63
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (surprised)"
+    },
+    {
+      "id": 63,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        880
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 63
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 64
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            65
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        850
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_surprised"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 65
+        }
+      ],
+      "title": "Save: surprised"
+    },
+    {
+      "id": 124,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        1380
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 66
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            67
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (thinking)"
+    },
+    {
+      "id": 24,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        1200
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, thoughtful expression, looking up and to the right, finger on chin"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 68
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            69
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "THINKING"
+    },
+    {
+      "id": 34,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        1200
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 69
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            70
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (thinking)"
+    },
+    {
+      "id": 44,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        1280
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 71
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 70
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            73
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (thinking)"
+    },
+    {
+      "id": 54,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        1200
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 72
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 73
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 74
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 67
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 75
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            76
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (thinking)"
+    },
+    {
+      "id": 64,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        1230
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 76
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 77
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            78
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        1200
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_thinking"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 78
+        }
+      ],
+      "title": "Save: thinking"
+    },
+    {
+      "id": 125,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        1730
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 79
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            80
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (sleepy)"
+    },
+    {
+      "id": 25,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        1550
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, drowsy sleepy expression, eyes half-closed, yawning"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 81
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            82
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "SLEEPY"
+    },
+    {
+      "id": 35,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        1550
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 82
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            83
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (sleepy)"
+    },
+    {
+      "id": 45,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        1630
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 84
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 83
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            86
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (sleepy)"
+    },
+    {
+      "id": 55,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        1550
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 85
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 86
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 87
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 80
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 88
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            89
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (sleepy)"
+    },
+    {
+      "id": 65,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        1580
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 89
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 90
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            91
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        1550
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_sleepy"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 91
+        }
+      ],
+      "title": "Save: sleepy"
+    },
+    {
+      "id": 126,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        2080
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 92
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            93
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (talking)"
+    },
+    {
+      "id": 26,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        1900
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, mid-sentence expression, mouth open while speaking, animated"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 94
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            95
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "TALKING"
+    },
+    {
+      "id": 36,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        1900
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 95
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            96
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (talking)"
+    },
+    {
+      "id": 46,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        1980
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 97
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 96
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            99
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (talking)"
+    },
+    {
+      "id": 56,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        1900
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 98
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 99
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 100
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 93
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 101
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            102
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (talking)"
+    },
+    {
+      "id": 66,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        1930
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 102
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 103
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            104
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        1900
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_talking"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 104
+        }
+      ],
+      "title": "Save: talking"
+    },
+    {
+      "id": 127,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        2430
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 105
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            106
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (excited)"
+    },
+    {
+      "id": 27,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        2250
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, extremely excited expression, sparkling eyes, huge grin"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 107
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            108
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "EXCITED"
+    },
+    {
+      "id": 37,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        2250
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 108
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            109
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (excited)"
+    },
+    {
+      "id": 47,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        2330
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 110
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 109
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            112
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (excited)"
+    },
+    {
+      "id": 57,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        2250
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 111
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 112
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 113
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 106
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 114
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            115
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (excited)"
+    },
+    {
+      "id": 67,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        2280
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 115
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 116
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            117
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        2250
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_excited"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 117
+        }
+      ],
+      "title": "Save: excited"
+    },
+    {
+      "id": 128,
+      "type": "BasicScheduler",
+      "pos": [
+        550,
+        2780
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        0.55
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 118
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            119
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (confused)"
+    },
+    {
+      "id": 28,
+      "type": "CLIPTextEncode",
+      "pos": [
+        950,
+        2600
+      ],
+      "size": [
+        350,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfront view, centered, face only, \nabove the shoulder camera framing, positioned in the center of the frame, \nmiddle of the image, no hands or arms visible in frame, mostly head shot neck up, confused expression, head tilted to the side, one eyebrow raised"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 120
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            121
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "CONFUSED"
+    },
+    {
+      "id": 38,
+      "type": "FluxGuidance",
+      "pos": [
+        1350,
+        2600
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 121
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            122
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (confused)"
+    },
+    {
+      "id": 48,
+      "type": "BasicGuider",
+      "pos": [
+        1350,
+        2680
+      ],
+      "size": [
+        280,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 123
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 122
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            125
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (confused)"
+    },
+    {
+      "id": 58,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1850,
+        2600
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 124
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 125
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 126
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 119
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 127
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            128
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sample (confused)"
+    },
+    {
+      "id": 68,
+      "type": "VAEDecode",
+      "pos": [
+        2200,
+        2630
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 128
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 129
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            130
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "type": "SaveImage",
+      "pos": [
+        2450,
+        2600
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_confused"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 130
+        }
+      ],
+      "title": "Save: confused"
+    },
+    {
+      "id": 80,
+      "type": "Note",
+      "pos": [
+        -550,
+        550
+      ],
+      "size": [
+        800,
+        450
+      ],
+      "properties": {},
+      "widgets_values": [
+        "=== MIRA FLUX EXPRESSION BATCH WORKFLOW ===\n\nPipeline (matches reference workflow):\n  UNETLoader -> LoraLoader -> ApplyIPAdapterFlux -> ModelSamplingFlux\n  -> per expression: CLIPTextEncode -> FluxGuidance -> BasicGuider\n  -> SamplerCustomAdvanced -> VAEDecode -> SaveImage\n\nEXTENSION REQUIRED:\n  ComfyUI-IPAdapter-Flux (Shakker-Labs)\n  https://github.com/Shakker-Labs/ComfyUI-IPAdapter-Flux\n\nMODELS (update filenames in nodes to match yours):\n  Flux UNET:   flux_dev.safetensors\n  CLIP:        t5xxl_fp16.safetensors + clip_l.safetensors\n  VAE:         ae.safetensors\n  LoRA:        RM_Anime_Cyberpunk_v0.5M.safetensors\n  IP-Adapter:  ip-adapter.bin  (in models/ipadapter-flux/)\n  SigLIP:      google/siglip-so400m-patch14-384  (auto-downloaded)\n\nHOW TO USE:\n  1. Upload reference mira image as 'mira_reference.png'\n  2. On the HEAD MASK node: right-click image → Open in MaskEditor\n     Paint WHITE over head/face, leave body BLACK → Save to node\n  3. Update model filenames if yours differ\n  4. Queue Prompt - all 9 expressions generate in one batch\n  5. Outputs in ComfyUI/output/ as mira_<expression>_00001.png\n  6. Copy PNGs to ui/sprites/\n\nTUNING:\n  - IP-Adapter weight: 0.95 (higher = more like reference, lower for more variation)\n  - Denoise: 0.55 (img2img — lower = more reference preserved, higher = more expression change)\n  - Seed 42 (fixed) for consistency across expressions\n  - Guidance 3.5 (in FluxGuidance nodes)\n  - 30 steps, euler sampler, simple scheduler\n"
+      ],
+      "title": "Instructions"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      1,
+      "CLIP"
+    ],
+    [
+      3,
+      4,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      4,
+      4,
+      1,
+      13,
+      1,
+      "CLIP"
+    ],
+    [
+      5,
+      13,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      6,
+      5,
+      0,
+      7,
+      1,
+      "IPADAPTERFLUX"
+    ],
+    [
+      7,
+      6,
+      0,
+      7,
+      2,
+      "IMAGE"
+    ],
+    [
+      8,
+      7,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      6,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      3,
+      0,
+      10,
+      1,
+      "VAE"
+    ],
+    [
+      11,
+      10,
+      0,
+      11,
+      0,
+      "LATENT"
+    ],
+    [
+      12,
+      9,
+      1,
+      11,
+      1,
+      "MASK"
+    ],
+    [
+      14,
+      8,
+      0,
+      120,
+      0,
+      "MODEL"
+    ],
+    [
+      16,
+      13,
+      1,
+      20,
+      0,
+      "CLIP"
+    ],
+    [
+      17,
+      20,
+      0,
+      30,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      30,
+      0,
+      40,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      19,
+      8,
+      0,
+      40,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      14,
+      0,
+      50,
+      0,
+      "NOISE"
+    ],
+    [
+      21,
+      40,
+      0,
+      50,
+      1,
+      "GUIDER"
+    ],
+    [
+      22,
+      12,
+      0,
+      50,
+      2,
+      "SAMPLER"
+    ],
+    [
+      15,
+      120,
+      0,
+      50,
+      3,
+      "SIGMAS"
+    ],
+    [
+      23,
+      11,
+      0,
+      50,
+      4,
+      "LATENT"
+    ],
+    [
+      24,
+      50,
+      0,
+      60,
+      0,
+      "LATENT"
+    ],
+    [
+      25,
+      3,
+      0,
+      60,
+      1,
+      "VAE"
+    ],
+    [
+      26,
+      60,
+      0,
+      70,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      8,
+      0,
+      121,
+      0,
+      "MODEL"
+    ],
+    [
+      29,
+      13,
+      1,
+      21,
+      0,
+      "CLIP"
+    ],
+    [
+      30,
+      21,
+      0,
+      31,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      31,
+      31,
+      0,
+      41,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      32,
+      8,
+      0,
+      41,
+      0,
+      "MODEL"
+    ],
+    [
+      33,
+      14,
+      0,
+      51,
+      0,
+      "NOISE"
+    ],
+    [
+      34,
+      41,
+      0,
+      51,
+      1,
+      "GUIDER"
+    ],
+    [
+      35,
+      12,
+      0,
+      51,
+      2,
+      "SAMPLER"
+    ],
+    [
+      28,
+      121,
+      0,
+      51,
+      3,
+      "SIGMAS"
+    ],
+    [
+      36,
+      11,
+      0,
+      51,
+      4,
+      "LATENT"
+    ],
+    [
+      37,
+      51,
+      0,
+      61,
+      0,
+      "LATENT"
+    ],
+    [
+      38,
+      3,
+      0,
+      61,
+      1,
+      "VAE"
+    ],
+    [
+      39,
+      61,
+      0,
+      71,
+      0,
+      "IMAGE"
+    ],
+    [
+      40,
+      8,
+      0,
+      122,
+      0,
+      "MODEL"
+    ],
+    [
+      42,
+      13,
+      1,
+      22,
+      0,
+      "CLIP"
+    ],
+    [
+      43,
+      22,
+      0,
+      32,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      44,
+      32,
+      0,
+      42,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      45,
+      8,
+      0,
+      42,
+      0,
+      "MODEL"
+    ],
+    [
+      46,
+      14,
+      0,
+      52,
+      0,
+      "NOISE"
+    ],
+    [
+      47,
+      42,
+      0,
+      52,
+      1,
+      "GUIDER"
+    ],
+    [
+      48,
+      12,
+      0,
+      52,
+      2,
+      "SAMPLER"
+    ],
+    [
+      41,
+      122,
+      0,
+      52,
+      3,
+      "SIGMAS"
+    ],
+    [
+      49,
+      11,
+      0,
+      52,
+      4,
+      "LATENT"
+    ],
+    [
+      50,
+      52,
+      0,
+      62,
+      0,
+      "LATENT"
+    ],
+    [
+      51,
+      3,
+      0,
+      62,
+      1,
+      "VAE"
+    ],
+    [
+      52,
+      62,
+      0,
+      72,
+      0,
+      "IMAGE"
+    ],
+    [
+      53,
+      8,
+      0,
+      123,
+      0,
+      "MODEL"
+    ],
+    [
+      55,
+      13,
+      1,
+      23,
+      0,
+      "CLIP"
+    ],
+    [
+      56,
+      23,
+      0,
+      33,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      57,
+      33,
+      0,
+      43,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      58,
+      8,
+      0,
+      43,
+      0,
+      "MODEL"
+    ],
+    [
+      59,
+      14,
+      0,
+      53,
+      0,
+      "NOISE"
+    ],
+    [
+      60,
+      43,
+      0,
+      53,
+      1,
+      "GUIDER"
+    ],
+    [
+      61,
+      12,
+      0,
+      53,
+      2,
+      "SAMPLER"
+    ],
+    [
+      54,
+      123,
+      0,
+      53,
+      3,
+      "SIGMAS"
+    ],
+    [
+      62,
+      11,
+      0,
+      53,
+      4,
+      "LATENT"
+    ],
+    [
+      63,
+      53,
+      0,
+      63,
+      0,
+      "LATENT"
+    ],
+    [
+      64,
+      3,
+      0,
+      63,
+      1,
+      "VAE"
+    ],
+    [
+      65,
+      63,
+      0,
+      73,
+      0,
+      "IMAGE"
+    ],
+    [
+      66,
+      8,
+      0,
+      124,
+      0,
+      "MODEL"
+    ],
+    [
+      68,
+      13,
+      1,
+      24,
+      0,
+      "CLIP"
+    ],
+    [
+      69,
+      24,
+      0,
+      34,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      70,
+      34,
+      0,
+      44,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      71,
+      8,
+      0,
+      44,
+      0,
+      "MODEL"
+    ],
+    [
+      72,
+      14,
+      0,
+      54,
+      0,
+      "NOISE"
+    ],
+    [
+      73,
+      44,
+      0,
+      54,
+      1,
+      "GUIDER"
+    ],
+    [
+      74,
+      12,
+      0,
+      54,
+      2,
+      "SAMPLER"
+    ],
+    [
+      67,
+      124,
+      0,
+      54,
+      3,
+      "SIGMAS"
+    ],
+    [
+      75,
+      11,
+      0,
+      54,
+      4,
+      "LATENT"
+    ],
+    [
+      76,
+      54,
+      0,
+      64,
+      0,
+      "LATENT"
+    ],
+    [
+      77,
+      3,
+      0,
+      64,
+      1,
+      "VAE"
+    ],
+    [
+      78,
+      64,
+      0,
+      74,
+      0,
+      "IMAGE"
+    ],
+    [
+      79,
+      8,
+      0,
+      125,
+      0,
+      "MODEL"
+    ],
+    [
+      81,
+      13,
+      1,
+      25,
+      0,
+      "CLIP"
+    ],
+    [
+      82,
+      25,
+      0,
+      35,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      83,
+      35,
+      0,
+      45,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      84,
+      8,
+      0,
+      45,
+      0,
+      "MODEL"
+    ],
+    [
+      85,
+      14,
+      0,
+      55,
+      0,
+      "NOISE"
+    ],
+    [
+      86,
+      45,
+      0,
+      55,
+      1,
+      "GUIDER"
+    ],
+    [
+      87,
+      12,
+      0,
+      55,
+      2,
+      "SAMPLER"
+    ],
+    [
+      80,
+      125,
+      0,
+      55,
+      3,
+      "SIGMAS"
+    ],
+    [
+      88,
+      11,
+      0,
+      55,
+      4,
+      "LATENT"
+    ],
+    [
+      89,
+      55,
+      0,
+      65,
+      0,
+      "LATENT"
+    ],
+    [
+      90,
+      3,
+      0,
+      65,
+      1,
+      "VAE"
+    ],
+    [
+      91,
+      65,
+      0,
+      75,
+      0,
+      "IMAGE"
+    ],
+    [
+      92,
+      8,
+      0,
+      126,
+      0,
+      "MODEL"
+    ],
+    [
+      94,
+      13,
+      1,
+      26,
+      0,
+      "CLIP"
+    ],
+    [
+      95,
+      26,
+      0,
+      36,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      96,
+      36,
+      0,
+      46,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      97,
+      8,
+      0,
+      46,
+      0,
+      "MODEL"
+    ],
+    [
+      98,
+      14,
+      0,
+      56,
+      0,
+      "NOISE"
+    ],
+    [
+      99,
+      46,
+      0,
+      56,
+      1,
+      "GUIDER"
+    ],
+    [
+      100,
+      12,
+      0,
+      56,
+      2,
+      "SAMPLER"
+    ],
+    [
+      93,
+      126,
+      0,
+      56,
+      3,
+      "SIGMAS"
+    ],
+    [
+      101,
+      11,
+      0,
+      56,
+      4,
+      "LATENT"
+    ],
+    [
+      102,
+      56,
+      0,
+      66,
+      0,
+      "LATENT"
+    ],
+    [
+      103,
+      3,
+      0,
+      66,
+      1,
+      "VAE"
+    ],
+    [
+      104,
+      66,
+      0,
+      76,
+      0,
+      "IMAGE"
+    ],
+    [
+      105,
+      8,
+      0,
+      127,
+      0,
+      "MODEL"
+    ],
+    [
+      107,
+      13,
+      1,
+      27,
+      0,
+      "CLIP"
+    ],
+    [
+      108,
+      27,
+      0,
+      37,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      109,
+      37,
+      0,
+      47,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      110,
+      8,
+      0,
+      47,
+      0,
+      "MODEL"
+    ],
+    [
+      111,
+      14,
+      0,
+      57,
+      0,
+      "NOISE"
+    ],
+    [
+      112,
+      47,
+      0,
+      57,
+      1,
+      "GUIDER"
+    ],
+    [
+      113,
+      12,
+      0,
+      57,
+      2,
+      "SAMPLER"
+    ],
+    [
+      106,
+      127,
+      0,
+      57,
+      3,
+      "SIGMAS"
+    ],
+    [
+      114,
+      11,
+      0,
+      57,
+      4,
+      "LATENT"
+    ],
+    [
+      115,
+      57,
+      0,
+      67,
+      0,
+      "LATENT"
+    ],
+    [
+      116,
+      3,
+      0,
+      67,
+      1,
+      "VAE"
+    ],
+    [
+      117,
+      67,
+      0,
+      77,
+      0,
+      "IMAGE"
+    ],
+    [
+      118,
+      8,
+      0,
+      128,
+      0,
+      "MODEL"
+    ],
+    [
+      120,
+      13,
+      1,
+      28,
+      0,
+      "CLIP"
+    ],
+    [
+      121,
+      28,
+      0,
+      38,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      122,
+      38,
+      0,
+      48,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      123,
+      8,
+      0,
+      48,
+      0,
+      "MODEL"
+    ],
+    [
+      124,
+      14,
+      0,
+      58,
+      0,
+      "NOISE"
+    ],
+    [
+      125,
+      48,
+      0,
+      58,
+      1,
+      "GUIDER"
+    ],
+    [
+      126,
+      12,
+      0,
+      58,
+      2,
+      "SAMPLER"
+    ],
+    [
+      119,
+      128,
+      0,
+      58,
+      3,
+      "SIGMAS"
+    ],
+    [
+      127,
+      11,
+      0,
+      58,
+      4,
+      "LATENT"
+    ],
+    [
+      128,
+      58,
+      0,
+      68,
+      0,
+      "LATENT"
+    ],
+    [
+      129,
+      3,
+      0,
+      68,
+      1,
+      "VAE"
+    ],
+    [
+      130,
+      68,
+      0,
+      78,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Model + LoRA",
+      "bounding": [
+        -560,
+        -240,
+        700,
+        420
+      ],
+      "color": "#3f789e"
+    },
+    {
+      "title": "IP-Adapter (Character Lock)",
+      "bounding": [
+        190,
+        -130,
+        310,
+        340
+      ],
+      "color": "#8e6f3f"
+    },
+    {
+      "title": "Sampling Setup",
+      "bounding": [
+        540,
+        -130,
+        340,
+        680
+      ],
+      "color": "#5e3f8e"
+    },
+    {
+      "title": "Expression Branches (x9)",
+      "bounding": [
+        940,
+        -230,
+        1940,
+        3230
+      ],
+      "color": "#3f8e5e"
+    }
+  ],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

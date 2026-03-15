@@ -1,11 +1,11 @@
 # Custom Wake Word Training
 
-Train a custom "pii-chan" wake word for OpenWakeWord.
+Train a custom "mira" wake word for OpenWakeWord.
 
 ## Prerequisites
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 source venv/bin/activate
 pip install openwakeword
 ```
@@ -22,10 +22,10 @@ cd openWakeWord
 # Install training dependencies
 pip install -e ".[training]"
 
-# Generate synthetic samples for "pii-chan"
+# Generate synthetic samples for "mira"
 python -m openwakeword.train \
-  --wake-word "pii chan" \
-  --output-dir ~/pii-chan/models/pii-chan-wakeword \
+  --wake-word "mira" \
+  --output-dir ~/mira/models/mira-wakeword \
   --synthetic-samples 5000
 ```
 
@@ -33,15 +33,15 @@ python -m openwakeword.train \
 
 ### Step 1: Record Samples
 
-Record yourself saying "pii-chan" 50-100 times:
+Record yourself saying "mira" 50-100 times:
 
 ```bash
-mkdir -p ~/pii-chan/wake_samples/positive
+mkdir -p ~/mira/wake_samples/positive
 
-# Record samples (say "pii-chan" each time)
+# Record samples (say "mira" each time)
 for i in $(seq 1 50); do
-  echo "Say 'pii-chan' (sample $i/50)..."
-  arecord -D plughw:2,0 -f cd -d 2 ~/pii-chan/wake_samples/positive/sample_$i.wav
+  echo "Say 'mira' (sample $i/50)..."
+  arecord -D plughw:2,0 -f cd -d 2 ~/mira/wake_samples/positive/sample_$i.wav
   sleep 1
 done
 ```
@@ -51,12 +51,12 @@ done
 Record random speech that's NOT the wake word:
 
 ```bash
-mkdir -p ~/pii-chan/wake_samples/negative
+mkdir -p ~/mira/wake_samples/negative
 
 # Record random talking, background noise, etc.
 for i in $(seq 1 50); do
   echo "Say something else or make noise (sample $i/50)..."
-  arecord -D plughw:2,0 -f cd -d 3 ~/pii-chan/wake_samples/negative/sample_$i.wav
+  arecord -D plughw:2,0 -f cd -d 3 ~/mira/wake_samples/negative/sample_$i.wav
   sleep 1
 done
 ```
@@ -64,11 +64,11 @@ done
 ### Step 3: Train the Model
 
 ```bash
-cd ~/pii-chan
+cd ~/mira
 python -m openwakeword.train \
   --positive-samples wake_samples/positive \
   --negative-samples wake_samples/negative \
-  --output-dir models/pii-chan-wakeword \
+  --output-dir models/mira-wakeword \
   --epochs 50
 ```
 
@@ -81,7 +81,7 @@ from openwakeword.model import Model
 
 # Load custom model
 model = Model(
-    wakeword_models=["models/pii-chan-wakeword/pii_chan.onnx"]
+    wakeword_models=["models/mira-wakeword/mira.onnx"]
 )
 ```
 

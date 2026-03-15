@@ -1,0 +1,261 @@
+{
+  "last_node_id": 18,
+  "last_link_id": 18,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [-600, -200],
+      "size": [315, 82],
+      "properties": {"Node name for S&R": "UNETLoader"},
+      "widgets_values": ["flux_dev.safetensors", "default"],
+      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [1], "slot_index": 0}],
+      "title": "Flux UNET"
+    },
+    {
+      "id": 2,
+      "type": "DualCLIPLoader",
+      "pos": [-600, -70],
+      "size": [315, 130],
+      "properties": {"Node name for S&R": "DualCLIPLoader"},
+      "widgets_values": ["t5xxl_fp16.safetensors", "clip_l.safetensors", "flux", "default"],
+      "outputs": [{"name": "CLIP", "type": "CLIP", "links": [2], "slot_index": 0}],
+      "title": "Dual CLIP"
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [-600, 120],
+      "size": [315, 58],
+      "properties": {"Node name for S&R": "VAELoader"},
+      "widgets_values": ["ae.safetensors"],
+      "outputs": [{"name": "VAE", "type": "VAE", "links": [3, 4], "slot_index": 0}],
+      "title": "Flux VAE"
+    },
+    {
+      "id": 4,
+      "type": "LoraLoader",
+      "pos": [-220, -200],
+      "size": [315, 126],
+      "properties": {"Node name for S&R": "LoraLoader"},
+      "widgets_values": ["RM_Anime_Cyberpunk_v0.5M.safetensors", 1, 1],
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 1},
+        {"name": "clip", "type": "CLIP", "link": 2}
+      ],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [5], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [6], "slot_index": 1}
+      ],
+      "title": "LoRA (style)"
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "pos": [-600, 250],
+      "size": [400, 500],
+      "properties": {},
+      "widgets_values": ["mira_tpose_full_seed1_00001_.png", "image"],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [7], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": [8], "slot_index": 1}
+      ],
+      "title": "Source Image (RIGHT-CLICK → Open in MaskEditor to paint)"
+    },
+    {
+      "id": 6,
+      "type": "VAEEncode",
+      "pos": [150, 350],
+      "size": [210, 46],
+      "properties": {"Node name for S&R": "VAEEncode"},
+      "widgets_values": [],
+      "inputs": [
+        {"name": "pixels", "type": "IMAGE", "link": 7},
+        {"name": "vae", "type": "VAE", "link": 3}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [9], "slot_index": 0}],
+      "title": "Encode Source Image"
+    },
+    {
+      "id": 7,
+      "type": "SetLatentNoiseMask",
+      "pos": [150, 450],
+      "size": [280, 46],
+      "properties": {"Node name for S&R": "SetLatentNoiseMask"},
+      "widgets_values": [],
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 9},
+        {"name": "mask", "type": "MASK", "link": 8}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [10], "slot_index": 0}],
+      "title": "Apply Inpaint Mask"
+    },
+    {
+      "id": 8,
+      "type": "CLIPTextEncode",
+      "pos": [150, -100],
+      "size": [450, 200],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfull body, front view, centered, symmetrical pose,\neven flat lighting, character reference sheet style"
+      ],
+      "inputs": [{"name": "clip", "type": "CLIP", "link": 6}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [11], "slot_index": 0}],
+      "title": "Prompt (same as original)"
+    },
+    {
+      "id": 9,
+      "type": "FluxGuidance",
+      "pos": [650, -50],
+      "size": [280, 58],
+      "properties": {"Node name for S&R": "FluxGuidance"},
+      "widgets_values": [3.5],
+      "inputs": [{"name": "conditioning", "type": "CONDITIONING", "link": 11}],
+      "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [12], "slot_index": 0}],
+      "title": "Guidance (3.5)"
+    },
+    {
+      "id": 10,
+      "type": "ModelSamplingFlux",
+      "pos": [150, 150],
+      "size": [315, 130],
+      "properties": {"Node name for S&R": "ModelSamplingFlux"},
+      "widgets_values": [1.15, 0.5, 1024, 1024],
+      "inputs": [{"name": "model", "type": "MODEL", "link": 5}],
+      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [13, 14], "slot_index": 0}],
+      "title": "ModelSamplingFlux"
+    },
+    {
+      "id": 11,
+      "type": "BasicGuider",
+      "pos": [1000, 50],
+      "size": [222, 46],
+      "properties": {"Node name for S&R": "BasicGuider"},
+      "widgets_values": [],
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 13},
+        {"name": "conditioning", "type": "CONDITIONING", "link": 12}
+      ],
+      "outputs": [{"name": "GUIDER", "type": "GUIDER", "links": [15], "slot_index": 0}],
+      "title": "BasicGuider"
+    },
+    {
+      "id": 12,
+      "type": "RandomNoise",
+      "pos": [1000, 150],
+      "size": [315, 82],
+      "properties": {"Node name for S&R": "RandomNoise"},
+      "widgets_values": [42, "randomize"],
+      "outputs": [{"name": "NOISE", "type": "NOISE", "links": [16], "slot_index": 0}],
+      "title": "Noise (randomize)"
+    },
+    {
+      "id": 13,
+      "type": "KSamplerSelect",
+      "pos": [1000, 280],
+      "size": [315, 58],
+      "properties": {"Node name for S&R": "KSamplerSelect"},
+      "widgets_values": ["euler"],
+      "outputs": [{"name": "SAMPLER", "type": "SAMPLER", "links": [17], "slot_index": 0}],
+      "title": "Sampler (euler)"
+    },
+    {
+      "id": 14,
+      "type": "BasicScheduler",
+      "pos": [1000, 380],
+      "size": [315, 106],
+      "properties": {"Node name for S&R": "BasicScheduler"},
+      "widgets_values": ["simple", 30, 0.75],
+      "inputs": [{"name": "model", "type": "MODEL", "link": 14}],
+      "outputs": [{"name": "SIGMAS", "type": "SIGMAS", "links": [18], "slot_index": 0}],
+      "title": "Scheduler (30 steps, 0.75 denoise)"
+    },
+    {
+      "id": 15,
+      "type": "SamplerCustomAdvanced",
+      "pos": [1400, 150],
+      "size": [272, 180],
+      "properties": {"Node name for S&R": "SamplerCustomAdvanced"},
+      "widgets_values": [],
+      "inputs": [
+        {"name": "noise", "type": "NOISE", "link": 16},
+        {"name": "guider", "type": "GUIDER", "link": 15},
+        {"name": "sampler", "type": "SAMPLER", "link": 17},
+        {"name": "sigmas", "type": "SIGMAS", "link": 18},
+        {"name": "latent_image", "type": "LATENT", "link": 10}
+      ],
+      "outputs": [
+        {"name": "output", "type": "LATENT", "links": [19], "slot_index": 0},
+        {"name": "denoised_output", "type": "LATENT", "links": [], "slot_index": 1}
+      ],
+      "title": "SamplerCustomAdvanced"
+    },
+    {
+      "id": 16,
+      "type": "VAEDecode",
+      "pos": [1750, 200],
+      "size": [210, 46],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "widgets_values": [],
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 19},
+        {"name": "vae", "type": "VAE", "link": 4}
+      ],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [20], "slot_index": 0}]
+    },
+    {
+      "id": 17,
+      "type": "SaveImage",
+      "pos": [2050, 50],
+      "size": [400, 400],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["mira_tpose_inpaint"],
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 20}],
+      "title": "Save Inpainted Result"
+    },
+    {
+      "id": 18,
+      "type": "Note",
+      "pos": [-600, 800],
+      "size": [550, 300],
+      "properties": {},
+      "widgets_values": [
+        "=== MIRA INPAINTING WORKFLOW ===\n\nHOW TO USE:\n1. Load your T-pose image in the 'Source Image' node\n2. RIGHT-CLICK the image → 'Open in MaskEditor'\n3. Paint WHITE over the area you want to fix (the leg)\n4. Click 'Save to node' in the mask editor\n5. Hit Queue Prompt\n\nTUNING:\n- Denoise 0.75: Good balance of change vs consistency\n  - Lower (0.5-0.6): Subtle fix, more original preserved\n  - Higher (0.8-1.0): More creative freedom, may drift\n- The prompt should match your original generation\n- Randomize noise seed to try different results\n\nThe mask is WHITE = inpaint, BLACK = keep original."
+      ],
+      "title": "Instructions"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 4, 0, "MODEL"],
+    [2, 2, 0, 4, 1, "CLIP"],
+    [3, 3, 0, 6, 1, "VAE"],
+    [4, 3, 0, 16, 1, "VAE"],
+    [5, 4, 0, 10, 0, "MODEL"],
+    [6, 4, 1, 8, 0, "CLIP"],
+    [7, 5, 0, 6, 0, "IMAGE"],
+    [8, 5, 1, 7, 1, "MASK"],
+    [9, 6, 0, 7, 0, "LATENT"],
+    [10, 7, 0, 15, 4, "LATENT"],
+    [11, 8, 0, 9, 0, "CONDITIONING"],
+    [12, 9, 0, 11, 1, "CONDITIONING"],
+    [13, 10, 0, 11, 0, "MODEL"],
+    [14, 10, 0, 14, 0, "MODEL"],
+    [15, 11, 0, 15, 1, "GUIDER"],
+    [16, 12, 0, 15, 0, "NOISE"],
+    [17, 13, 0, 15, 2, "SAMPLER"],
+    [18, 14, 0, 15, 3, "SIGMAS"],
+    [19, 15, 0, 16, 0, "LATENT"],
+    [20, 16, 0, 17, 0, "IMAGE"]
+  ],
+  "groups": [
+    {"title": "Model Loading", "bounding": [-620, -240, 720, 280], "color": "#3f789e"},
+    {"title": "Source Image + Mask", "bounding": [-620, 220, 720, 580], "color": "#8e3f5e"},
+    {"title": "Prompt + Guidance", "bounding": [130, -130, 760, 350], "color": "#3f8e5e"},
+    {"title": "Inpaint Encoding", "bounding": [130, 320, 340, 220], "color": "#8e6f3f"},
+    {"title": "Sampling", "bounding": [980, 20, 360, 510], "color": "#5e3f8e"},
+    {"title": "Output", "bounding": [1730, 20, 760, 480], "color": "#8e6f3f"}
+  ],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

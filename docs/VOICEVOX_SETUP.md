@@ -1,8 +1,8 @@
 # VOICEVOX Setup
 
-VOICEVOX is a free, open-source Japanese text-to-speech engine with cute anime-style voices. Perfect for Pii-chan!
+VOICEVOX is a free, open-source Japanese text-to-speech engine with cute anime-style voices. Perfect for Mira!
 
-Pii-chan supports two modes:
+Mira supports two modes:
 - **VOICEVOX Core** (local Python bindings) — recommended for Raspberry Pi, no server needed
 - **VOICEVOX Engine** (HTTP API) — requires running VOICEVOX server
 
@@ -68,7 +68,7 @@ for vvm in Path('./models/voicevox/voicevox_core/models/vvms').glob('*.vvm'):
     synth.load_voice_model(model)
 
 # Synthesize (style_id=3 = ずんだもん ノーマル)
-wav = synth.tts('こんにちは！ピーちゃんです！', style_id=3)
+wav = synth.tts('こんにちは！ミラです！', style_id=3)
 with open('/tmp/voicevox_test.wav', 'wb') as f:
     f.write(wav)
 print('Saved to /tmp/voicevox_test.wav')
@@ -98,12 +98,12 @@ docker run -p 50021:50021 voicevox/voicevox_engine:cpu-latest
 | 0 | 四国めたん | あまあま (sweet) |
 | 1 | ずんだもん | あまあま (sweet) |
 | 2 | 四国めたん | ノーマル |
-| 3 | **ずんだもん** | **ノーマル** ← Recommended for Pii-chan |
+| 3 | **ずんだもん** | **ノーマル** ← Recommended for Mira |
 | 8 | 春日部つむぎ | ノーマル |
 | 10 | 雨晴はう | ノーマル |
 | 14 | 冥鳴ひまり | ノーマル |
 
-**Recommended for Pii-chan:** Speaker ID `3` (ずんだもん ノーマル) - cute but clear.
+**Recommended for Mira:** Speaker ID `3` (ずんだもん ノーマル) - cute but clear.
 
 ## Testing
 
@@ -141,13 +141,13 @@ voice:
 
 ## Auto-Detect Dual Engine Mode
 
-When `engine: auto`, Pii-chan automatically routes each utterance:
+When `engine: auto`, Mira automatically routes each utterance:
 - **Japanese/CJK text** → VOICEVOX (if available, else falls back to Piper with substitutions)
 - **English text** → Piper TTS
 
 Known substitutions:
-- `ピーちゃん` → "Pee-chan" (for Piper)
-- "Pii-chan" / "Pee-chan" → `ピーちゃん` (for VOICEVOX)
+- `ミラ` → "Mira" (for Piper)
+- "Mira" / "Mira" → `ミラ` (for VOICEVOX)
 
 ## Troubleshooting
 

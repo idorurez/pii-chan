@@ -1,5 +1,5 @@
 """
-Pii-chan's Brain - LLM integration and context building
+Mira's Brain - LLM integration and context building
 """
 import time
 import threading
@@ -31,7 +31,7 @@ class Event:
     
 class PiiBrain:
     """
-    The brain of Pii-chan - decides when and what to say.
+    The brain of Mira - decides when and what to say.
     """
     
     def __init__(self, 
@@ -81,7 +81,7 @@ class PiiBrain:
         p = Path(path)
         if p.exists():
             return p.read_text(encoding='utf-8')
-        return "あなたは優しい車のAIアシスタント、ピーちゃんです。"
+        return "あなたは優しい車のAIアシスタント、ミラです。"
         
     def _get_llm(self):
         """Lazy load the LLM (thread-safe)."""
@@ -266,13 +266,13 @@ class PiiBrain:
             prompt = (
                 f"[Just Happened]\n- {event_hint}\n\n"
                 + situation
-                + "\n\nReact to this event as Pii-chan. "
+                + "\n\nReact to this event as Mira. "
                   "One short sentence only. Casual, friendly."
             )
         else:
             prompt = (
                 situation
-                + "\n\nAs Pii-chan, say something if appropriate. "
+                + "\n\nAs Mira, say something if appropriate. "
                   "If nothing worth saying, just respond with '...' "
                   "One short sentence only. Casual, friendly."
             )
@@ -319,7 +319,7 @@ class PiiBrain:
         """Clean common LLM artifacts from response text."""
         text = re.sub(r'\(?\d{1,2}:\d{2}\)?', '', text)  # timestamps
         text = re.sub(r'^\[.*?\][:：]?\s*', '', text)     # [返答]: etc
-        text = re.sub(r'^ピーちゃん[:：]\s*', '', text)    # "ピーちゃん:" prefix
+        text = re.sub(r'^ミラ[:：]\s*', '', text)    # "ミラ:" prefix
         text = re.sub(r'^「|」$', '', text)                # stray brackets
         # Kill degenerate repetition (same char 5+ times)
         text = re.sub(r'(.)\1{4,}', r'\1\1', text)
@@ -609,7 +609,7 @@ class PiiBrain:
         messages = [
             {"role": "system", "content": self.personality
              + "\n\nThe driver is talking to you. Consider the car's current state "
-               "and respond naturally as Pii-chan. "
+               "and respond naturally as Mira. "
                "Keep responses short (1-2 sentences), casual and friendly.\n\n" + situation},
         ]
 

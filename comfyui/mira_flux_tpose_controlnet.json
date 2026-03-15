@@ -1,0 +1,4846 @@
+{
+  "last_node_id": 199,
+  "last_link_id": 138,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        -600,
+        -200
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "flux_dev.safetensors",
+        "default"
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Flux UNET"
+    },
+    {
+      "id": 2,
+      "type": "DualCLIPLoader",
+      "pos": [
+        -600,
+        -70
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "DualCLIPLoader"
+      },
+      "widgets_values": [
+        "t5xxl_fp16.safetensors",
+        "clip_l.safetensors",
+        "flux",
+        "default"
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Dual CLIP"
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        -600,
+        120
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "ae.safetensors"
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            18,
+            31,
+            44,
+            57,
+            70,
+            83,
+            96,
+            109,
+            122,
+            135
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Flux VAE"
+    },
+    {
+      "id": 4,
+      "type": "LoraLoader",
+      "pos": [
+        -220,
+        -200
+      ],
+      "size": [
+        315,
+        126
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoader"
+      },
+      "widgets_values": [
+        "RM_Anime_Cyberpunk_v0.5M.safetensors",
+        1,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            8
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            5
+          ],
+          "slot_index": 1
+        }
+      ],
+      "title": "LoRA (style)"
+    },
+    {
+      "id": 5,
+      "type": "ControlNetLoader",
+      "pos": [
+        -600,
+        250
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "ControlNetLoader"
+      },
+      "widgets_values": [
+        "flux-controlnet-union.safetensors"
+      ],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "ControlNet Union (InstantX)"
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        -600,
+        360
+      ],
+      "size": [
+        315,
+        400
+      ],
+      "properties": {},
+      "widgets_values": [
+        "t-pose_skeleton.png",
+        "image"
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "T-Pose Reference (LOAD YOUR SKELETON)"
+    },
+    {
+      "id": 7,
+      "type": "ControlNetApplyAdvanced",
+      "pos": [
+        150,
+        250
+      ],
+      "size": [
+        320,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "ControlNetApplyAdvanced"
+      },
+      "widgets_values": [
+        0.7,
+        0.0,
+        1.0
+      ],
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 6
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "control_net",
+          "type": "CONTROL_NET",
+          "link": 3
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            7
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Apply ControlNet (strength=0.7)"
+    },
+    {
+      "id": 8,
+      "type": "CLIPTextEncode",
+      "pos": [
+        150,
+        -100
+      ],
+      "size": [
+        450,
+        200
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "anime, cyberpunk, cyborg, tight fitting exosuit, armor, 1girl, solo, \nlooking straight at viewer, closed mouth, white hair, bob cut, face markings,\nrobot, glowing eyes, futuristic, sci-fi, blush, short hair, dark purple eyes, purple glow,\nanime artwork retro cyberpunk anime art by Tsubasa Nakai, \nPainting, Hyperrealism, detailed, 80's inspired, synthwave, neon, vibrant, \nretro futurism, anime style, key visual, studio anime, highly detailed, \nbig expressive eyes, black background, \nfull body, front view, centered, symmetrical pose,\neven flat lighting, character reference sheet style"
+      ],
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Positive Prompt (EDIT HERE)"
+    },
+    {
+      "id": 9,
+      "type": "FluxGuidance",
+      "pos": [
+        550,
+        250
+      ],
+      "size": [
+        280,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ],
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            10,
+            23,
+            36,
+            49,
+            62,
+            75,
+            88,
+            101,
+            114,
+            127
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guidance (3.5)"
+    },
+    {
+      "id": 10,
+      "type": "ModelSamplingFlux",
+      "pos": [
+        150,
+        80
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ModelSamplingFlux"
+      },
+      "widgets_values": [
+        1.15,
+        0.5,
+        1024,
+        1024
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            9,
+            13,
+            22,
+            26,
+            35,
+            39,
+            48,
+            52,
+            61,
+            65,
+            74,
+            78,
+            87,
+            91,
+            100,
+            104,
+            113,
+            117,
+            126,
+            130
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "ModelSamplingFlux"
+    },
+    {
+      "id": 21,
+      "type": "Note",
+      "pos": [
+        -600,
+        800
+      ],
+      "size": [
+        550,
+        300
+      ],
+      "properties": {},
+      "widgets_values": [
+        "=== MIRA T-POSE SEED EXPLORATION ===\n\nThis workflow runs 10 iterations with different noise seeds.\nAll share the same prompt, ControlNet, and model settings.\n\nSeeds: 2005563494988189, 4411576839328343, 2513690698208990, 1846388128833705, 572546722501017, 1687862145763950, 4191244774844555, 7557396729776374, 8092230433557472, 5011439091326380\n\nOutputs:\n- mira_tpose_full_seedN_*.png \u2192 Full body\n- mira_tpose_head_seedN_*.png \u2192 Cropped head\n"
+      ],
+      "title": "Seed Exploration Info"
+    },
+    {
+      "id": 106,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        0
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 1)"
+    },
+    {
+      "id": 107,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        100
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            12
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 1)"
+    },
+    {
+      "id": 108,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        200
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 1)"
+    },
+    {
+      "id": 109,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        350
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 1)"
+    },
+    {
+      "id": 100,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        0
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2005563494988189,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            16
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 1: 2005563494988189"
+    },
+    {
+      "id": 101,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        50
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 16
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 11
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 12
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 14
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            17
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 1)"
+    },
+    {
+      "id": 102,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        80
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 17
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            19,
+            20
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        -100
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed1"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "title": "Save Full (seed 1)"
+    },
+    {
+      "id": 104,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        350
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            21
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 1)"
+    },
+    {
+      "id": 105,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        250
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed1"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 21
+        }
+      ],
+      "title": "Save Head (seed 1)"
+    },
+    {
+      "id": 116,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        700
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 22
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            24
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 2)"
+    },
+    {
+      "id": 117,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        800
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            25
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 2)"
+    },
+    {
+      "id": 118,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        900
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            27
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 2)"
+    },
+    {
+      "id": 119,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        1050
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            28
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 2)"
+    },
+    {
+      "id": 110,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        700
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        4411576839328343,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            29
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 2: 4411576839328343"
+    },
+    {
+      "id": 111,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        750
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 29
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 24
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 25
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 27
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            30
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 2)"
+    },
+    {
+      "id": 112,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        780
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 30
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            32,
+            33
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        600
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed2"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 32
+        }
+      ],
+      "title": "Save Full (seed 2)"
+    },
+    {
+      "id": 114,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        1050
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            34
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 2)"
+    },
+    {
+      "id": 115,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        950
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed2"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 34
+        }
+      ],
+      "title": "Save Head (seed 2)"
+    },
+    {
+      "id": 126,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        1400
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 35
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            37
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 3)"
+    },
+    {
+      "id": 127,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        1500
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            38
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 3)"
+    },
+    {
+      "id": 128,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        1600
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            40
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 3)"
+    },
+    {
+      "id": 129,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        1750
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            41
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 3)"
+    },
+    {
+      "id": 120,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        1400
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2513690698208990,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            42
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 3: 2513690698208990"
+    },
+    {
+      "id": 121,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        1450
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 42
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 37
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 38
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 40
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 41
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            43
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 3)"
+    },
+    {
+      "id": 122,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        1480
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 43
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 44
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            45,
+            46
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        1300
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed3"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 45
+        }
+      ],
+      "title": "Save Full (seed 3)"
+    },
+    {
+      "id": 124,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        1750
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 46
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            47
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 3)"
+    },
+    {
+      "id": 125,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        1650
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed3"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 47
+        }
+      ],
+      "title": "Save Head (seed 3)"
+    },
+    {
+      "id": 136,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        2100
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 48
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            50
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 4)"
+    },
+    {
+      "id": 137,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        2200
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            51
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 4)"
+    },
+    {
+      "id": 138,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        2300
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            53
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 4)"
+    },
+    {
+      "id": 139,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        2450
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            54
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 4)"
+    },
+    {
+      "id": 130,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        2100
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        1846388128833705,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            55
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 4: 1846388128833705"
+    },
+    {
+      "id": 131,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        2150
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 55
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 50
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 51
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 53
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 54
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            56
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 4)"
+    },
+    {
+      "id": 132,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        2180
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 56
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 57
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            58,
+            59
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        2000
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed4"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 58
+        }
+      ],
+      "title": "Save Full (seed 4)"
+    },
+    {
+      "id": 134,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        2450
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            60
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 4)"
+    },
+    {
+      "id": 135,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        2350
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed4"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 60
+        }
+      ],
+      "title": "Save Head (seed 4)"
+    },
+    {
+      "id": 146,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        2800
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 61
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 62
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            63
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 5)"
+    },
+    {
+      "id": 147,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        2900
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            64
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 5)"
+    },
+    {
+      "id": 148,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        3000
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 65
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            66
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 5)"
+    },
+    {
+      "id": 149,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        3150
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            67
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 5)"
+    },
+    {
+      "id": 140,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        2800
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        572546722501017,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            68
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 5: 572546722501017"
+    },
+    {
+      "id": 141,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        2850
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 68
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 63
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 64
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 66
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 67
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            69
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 5)"
+    },
+    {
+      "id": 142,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        2880
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 69
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 70
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            71,
+            72
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        2700
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed5"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 71
+        }
+      ],
+      "title": "Save Full (seed 5)"
+    },
+    {
+      "id": 144,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        3150
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 72
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            73
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 5)"
+    },
+    {
+      "id": 145,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        3050
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed5"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 73
+        }
+      ],
+      "title": "Save Head (seed 5)"
+    },
+    {
+      "id": 156,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        3500
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 74
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 75
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            76
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 6)"
+    },
+    {
+      "id": 157,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        3600
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            77
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 6)"
+    },
+    {
+      "id": 158,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        3700
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 78
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            79
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 6)"
+    },
+    {
+      "id": 159,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        3850
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            80
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 6)"
+    },
+    {
+      "id": 150,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        3500
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        1687862145763950,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            81
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 6: 1687862145763950"
+    },
+    {
+      "id": 151,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        3550
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 81
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 76
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 77
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 79
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 80
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            82
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 6)"
+    },
+    {
+      "id": 152,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        3580
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 82
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 83
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            84,
+            85
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        3400
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed6"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 84
+        }
+      ],
+      "title": "Save Full (seed 6)"
+    },
+    {
+      "id": 154,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        3850
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 85
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            86
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 6)"
+    },
+    {
+      "id": 155,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        3750
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed6"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 86
+        }
+      ],
+      "title": "Save Head (seed 6)"
+    },
+    {
+      "id": 166,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        4200
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 87
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 88
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            89
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 7)"
+    },
+    {
+      "id": 167,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        4300
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            90
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 7)"
+    },
+    {
+      "id": 168,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        4400
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 91
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            92
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 7)"
+    },
+    {
+      "id": 169,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        4550
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            93
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 7)"
+    },
+    {
+      "id": 160,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        4200
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        4191244774844555,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            94
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 7: 4191244774844555"
+    },
+    {
+      "id": 161,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        4250
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 94
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 89
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 90
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 92
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 93
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            95
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 7)"
+    },
+    {
+      "id": 162,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        4280
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 95
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 96
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            97,
+            98
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        4100
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed7"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 97
+        }
+      ],
+      "title": "Save Full (seed 7)"
+    },
+    {
+      "id": 164,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        4550
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 98
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            99
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 7)"
+    },
+    {
+      "id": 165,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        4450
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed7"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 99
+        }
+      ],
+      "title": "Save Head (seed 7)"
+    },
+    {
+      "id": 176,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        4900
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 100
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 101
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            102
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 8)"
+    },
+    {
+      "id": 177,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        5000
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            103
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 8)"
+    },
+    {
+      "id": 178,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        5100
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 104
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            105
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 8)"
+    },
+    {
+      "id": 179,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        5250
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            106
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 8)"
+    },
+    {
+      "id": 170,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        4900
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        7557396729776374,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            107
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 8: 7557396729776374"
+    },
+    {
+      "id": 171,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        4950
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 107
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 102
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 103
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 105
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 106
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            108
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 8)"
+    },
+    {
+      "id": 172,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        4980
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 108
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 109
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            110,
+            111
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        4800
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed8"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 110
+        }
+      ],
+      "title": "Save Full (seed 8)"
+    },
+    {
+      "id": 174,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        5250
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 111
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            112
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 8)"
+    },
+    {
+      "id": 175,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        5150
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed8"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 112
+        }
+      ],
+      "title": "Save Head (seed 8)"
+    },
+    {
+      "id": 186,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        5600
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 113
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 114
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            115
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 9)"
+    },
+    {
+      "id": 187,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        5700
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            116
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 9)"
+    },
+    {
+      "id": 188,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        5800
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 117
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            118
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 9)"
+    },
+    {
+      "id": 189,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        5950
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            119
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 9)"
+    },
+    {
+      "id": 180,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        5600
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        8092230433557472,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            120
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 9: 8092230433557472"
+    },
+    {
+      "id": 181,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        5650
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 120
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 115
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 116
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 118
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 119
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            121
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 9)"
+    },
+    {
+      "id": 182,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        5680
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 121
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 122
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            123,
+            124
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        5500
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed9"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 123
+        }
+      ],
+      "title": "Save Full (seed 9)"
+    },
+    {
+      "id": 184,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        5950
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 124
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            125
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 9)"
+    },
+    {
+      "id": 185,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        5850
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed9"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 125
+        }
+      ],
+      "title": "Save Head (seed 9)"
+    },
+    {
+      "id": 196,
+      "type": "BasicGuider",
+      "pos": [
+        900,
+        6300
+      ],
+      "size": [
+        222,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 126
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 127
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            128
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Guider (seed 10)"
+    },
+    {
+      "id": 197,
+      "type": "KSamplerSelect",
+      "pos": [
+        900,
+        6400
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            129
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Sampler Select (seed 10)"
+    },
+    {
+      "id": 198,
+      "type": "BasicScheduler",
+      "pos": [
+        900,
+        6500
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "BasicScheduler"
+      },
+      "widgets_values": [
+        "simple",
+        30,
+        1
+      ],
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 130
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            131
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Scheduler (seed 10)"
+    },
+    {
+      "id": 199,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        900,
+        6650
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            132
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Latent (seed 10)"
+    },
+    {
+      "id": 190,
+      "type": "RandomNoise",
+      "pos": [
+        1300,
+        6300
+      ],
+      "size": [
+        315,
+        82
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        5011439091326380,
+        "fixed"
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            133
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Seed 10: 5011439091326380"
+    },
+    {
+      "id": 191,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1700,
+        6350
+      ],
+      "size": [
+        272,
+        180
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 133
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 128
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 129
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 131
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 132
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            134
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Sampler (seed 10)"
+    },
+    {
+      "id": 192,
+      "type": "VAEDecode",
+      "pos": [
+        2050,
+        6380
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": [],
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 134
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 135
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            136,
+            137
+          ],
+          "slot_index": 0
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "type": "SaveImage",
+      "pos": [
+        2350,
+        6200
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_full_seed10"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 136
+        }
+      ],
+      "title": "Save Full (seed 10)"
+    },
+    {
+      "id": 194,
+      "type": "ImageCrop",
+      "pos": [
+        2350,
+        6650
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        256,
+        0
+      ],
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 137
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            138
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Crop Head (seed 10)"
+    },
+    {
+      "id": 195,
+      "type": "SaveImage",
+      "pos": [
+        2750,
+        6550
+      ],
+      "size": [
+        400,
+        400
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "mira_tpose_head_seed10"
+      ],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 138
+        }
+      ],
+      "title": "Save Head (seed 10)"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      1,
+      "CLIP"
+    ],
+    [
+      3,
+      5,
+      0,
+      7,
+      2,
+      "CONTROL_NET"
+    ],
+    [
+      4,
+      6,
+      0,
+      7,
+      3,
+      "IMAGE"
+    ],
+    [
+      5,
+      4,
+      1,
+      8,
+      0,
+      "CLIP"
+    ],
+    [
+      6,
+      8,
+      0,
+      7,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      7,
+      7,
+      0,
+      9,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      8,
+      4,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      10,
+      0,
+      106,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      9,
+      0,
+      106,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      13,
+      10,
+      0,
+      108,
+      0,
+      "MODEL"
+    ],
+    [
+      16,
+      100,
+      0,
+      101,
+      0,
+      "NOISE"
+    ],
+    [
+      17,
+      101,
+      0,
+      102,
+      0,
+      "LATENT"
+    ],
+    [
+      18,
+      3,
+      0,
+      102,
+      1,
+      "VAE"
+    ],
+    [
+      19,
+      102,
+      0,
+      103,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      102,
+      0,
+      104,
+      0,
+      "IMAGE"
+    ],
+    [
+      21,
+      104,
+      0,
+      105,
+      0,
+      "IMAGE"
+    ],
+    [
+      22,
+      10,
+      0,
+      116,
+      0,
+      "MODEL"
+    ],
+    [
+      23,
+      9,
+      0,
+      116,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      26,
+      10,
+      0,
+      118,
+      0,
+      "MODEL"
+    ],
+    [
+      29,
+      110,
+      0,
+      111,
+      0,
+      "NOISE"
+    ],
+    [
+      30,
+      111,
+      0,
+      112,
+      0,
+      "LATENT"
+    ],
+    [
+      31,
+      3,
+      0,
+      112,
+      1,
+      "VAE"
+    ],
+    [
+      32,
+      112,
+      0,
+      113,
+      0,
+      "IMAGE"
+    ],
+    [
+      33,
+      112,
+      0,
+      114,
+      0,
+      "IMAGE"
+    ],
+    [
+      34,
+      114,
+      0,
+      115,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      10,
+      0,
+      126,
+      0,
+      "MODEL"
+    ],
+    [
+      36,
+      9,
+      0,
+      126,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      39,
+      10,
+      0,
+      128,
+      0,
+      "MODEL"
+    ],
+    [
+      42,
+      120,
+      0,
+      121,
+      0,
+      "NOISE"
+    ],
+    [
+      43,
+      121,
+      0,
+      122,
+      0,
+      "LATENT"
+    ],
+    [
+      44,
+      3,
+      0,
+      122,
+      1,
+      "VAE"
+    ],
+    [
+      45,
+      122,
+      0,
+      123,
+      0,
+      "IMAGE"
+    ],
+    [
+      46,
+      122,
+      0,
+      124,
+      0,
+      "IMAGE"
+    ],
+    [
+      47,
+      124,
+      0,
+      125,
+      0,
+      "IMAGE"
+    ],
+    [
+      48,
+      10,
+      0,
+      136,
+      0,
+      "MODEL"
+    ],
+    [
+      49,
+      9,
+      0,
+      136,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      52,
+      10,
+      0,
+      138,
+      0,
+      "MODEL"
+    ],
+    [
+      55,
+      130,
+      0,
+      131,
+      0,
+      "NOISE"
+    ],
+    [
+      56,
+      131,
+      0,
+      132,
+      0,
+      "LATENT"
+    ],
+    [
+      57,
+      3,
+      0,
+      132,
+      1,
+      "VAE"
+    ],
+    [
+      58,
+      132,
+      0,
+      133,
+      0,
+      "IMAGE"
+    ],
+    [
+      59,
+      132,
+      0,
+      134,
+      0,
+      "IMAGE"
+    ],
+    [
+      60,
+      134,
+      0,
+      135,
+      0,
+      "IMAGE"
+    ],
+    [
+      61,
+      10,
+      0,
+      146,
+      0,
+      "MODEL"
+    ],
+    [
+      62,
+      9,
+      0,
+      146,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      65,
+      10,
+      0,
+      148,
+      0,
+      "MODEL"
+    ],
+    [
+      68,
+      140,
+      0,
+      141,
+      0,
+      "NOISE"
+    ],
+    [
+      69,
+      141,
+      0,
+      142,
+      0,
+      "LATENT"
+    ],
+    [
+      70,
+      3,
+      0,
+      142,
+      1,
+      "VAE"
+    ],
+    [
+      71,
+      142,
+      0,
+      143,
+      0,
+      "IMAGE"
+    ],
+    [
+      72,
+      142,
+      0,
+      144,
+      0,
+      "IMAGE"
+    ],
+    [
+      73,
+      144,
+      0,
+      145,
+      0,
+      "IMAGE"
+    ],
+    [
+      74,
+      10,
+      0,
+      156,
+      0,
+      "MODEL"
+    ],
+    [
+      75,
+      9,
+      0,
+      156,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      78,
+      10,
+      0,
+      158,
+      0,
+      "MODEL"
+    ],
+    [
+      81,
+      150,
+      0,
+      151,
+      0,
+      "NOISE"
+    ],
+    [
+      82,
+      151,
+      0,
+      152,
+      0,
+      "LATENT"
+    ],
+    [
+      83,
+      3,
+      0,
+      152,
+      1,
+      "VAE"
+    ],
+    [
+      84,
+      152,
+      0,
+      153,
+      0,
+      "IMAGE"
+    ],
+    [
+      85,
+      152,
+      0,
+      154,
+      0,
+      "IMAGE"
+    ],
+    [
+      86,
+      154,
+      0,
+      155,
+      0,
+      "IMAGE"
+    ],
+    [
+      87,
+      10,
+      0,
+      166,
+      0,
+      "MODEL"
+    ],
+    [
+      88,
+      9,
+      0,
+      166,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      91,
+      10,
+      0,
+      168,
+      0,
+      "MODEL"
+    ],
+    [
+      94,
+      160,
+      0,
+      161,
+      0,
+      "NOISE"
+    ],
+    [
+      95,
+      161,
+      0,
+      162,
+      0,
+      "LATENT"
+    ],
+    [
+      96,
+      3,
+      0,
+      162,
+      1,
+      "VAE"
+    ],
+    [
+      97,
+      162,
+      0,
+      163,
+      0,
+      "IMAGE"
+    ],
+    [
+      98,
+      162,
+      0,
+      164,
+      0,
+      "IMAGE"
+    ],
+    [
+      99,
+      164,
+      0,
+      165,
+      0,
+      "IMAGE"
+    ],
+    [
+      100,
+      10,
+      0,
+      176,
+      0,
+      "MODEL"
+    ],
+    [
+      101,
+      9,
+      0,
+      176,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      104,
+      10,
+      0,
+      178,
+      0,
+      "MODEL"
+    ],
+    [
+      107,
+      170,
+      0,
+      171,
+      0,
+      "NOISE"
+    ],
+    [
+      108,
+      171,
+      0,
+      172,
+      0,
+      "LATENT"
+    ],
+    [
+      109,
+      3,
+      0,
+      172,
+      1,
+      "VAE"
+    ],
+    [
+      110,
+      172,
+      0,
+      173,
+      0,
+      "IMAGE"
+    ],
+    [
+      111,
+      172,
+      0,
+      174,
+      0,
+      "IMAGE"
+    ],
+    [
+      112,
+      174,
+      0,
+      175,
+      0,
+      "IMAGE"
+    ],
+    [
+      113,
+      10,
+      0,
+      186,
+      0,
+      "MODEL"
+    ],
+    [
+      114,
+      9,
+      0,
+      186,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      117,
+      10,
+      0,
+      188,
+      0,
+      "MODEL"
+    ],
+    [
+      120,
+      180,
+      0,
+      181,
+      0,
+      "NOISE"
+    ],
+    [
+      121,
+      181,
+      0,
+      182,
+      0,
+      "LATENT"
+    ],
+    [
+      122,
+      3,
+      0,
+      182,
+      1,
+      "VAE"
+    ],
+    [
+      123,
+      182,
+      0,
+      183,
+      0,
+      "IMAGE"
+    ],
+    [
+      124,
+      182,
+      0,
+      184,
+      0,
+      "IMAGE"
+    ],
+    [
+      125,
+      184,
+      0,
+      185,
+      0,
+      "IMAGE"
+    ],
+    [
+      126,
+      10,
+      0,
+      196,
+      0,
+      "MODEL"
+    ],
+    [
+      127,
+      9,
+      0,
+      196,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      130,
+      10,
+      0,
+      198,
+      0,
+      "MODEL"
+    ],
+    [
+      133,
+      190,
+      0,
+      191,
+      0,
+      "NOISE"
+    ],
+    [
+      134,
+      191,
+      0,
+      192,
+      0,
+      "LATENT"
+    ],
+    [
+      135,
+      3,
+      0,
+      192,
+      1,
+      "VAE"
+    ],
+    [
+      136,
+      192,
+      0,
+      193,
+      0,
+      "IMAGE"
+    ],
+    [
+      137,
+      192,
+      0,
+      194,
+      0,
+      "IMAGE"
+    ],
+    [
+      138,
+      194,
+      0,
+      195,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "Model Loading",
+      "bounding": [
+        -620,
+        -240,
+        720,
+        280
+      ],
+      "color": "#3f789e"
+    },
+    {
+      "title": "ControlNet (Pose)",
+      "bounding": [
+        -620,
+        220,
+        720,
+        580
+      ],
+      "color": "#8e3f5e"
+    },
+    {
+      "title": "Prompt + Guidance",
+      "bounding": [
+        130,
+        -130,
+        760,
+        500
+      ],
+      "color": "#3f8e5e"
+    },
+    {
+      "title": "Shared Sampling Config",
+      "bounding": [
+        880,
+        220,
+        360,
+        700
+      ],
+      "color": "#5e3f8e"
+    },
+    {
+      "title": "Seed Iterations (10x)",
+      "bounding": [
+        1280,
+        -120,
+        1600,
+        5100
+      ],
+      "color": "#8e6f3f"
+    }
+  ],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

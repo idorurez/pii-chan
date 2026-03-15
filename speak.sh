@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper script that activates venv and runs speak.py
-# Usage: ./speak.sh "Hello, I am Pii-chan!"
+# Usage: ./speak.sh "Hello, I am Mira!"
 
 cd "$(dirname "$0")"
 source venv/bin/activate

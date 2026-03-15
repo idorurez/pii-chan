@@ -1,5 +1,5 @@
 """
-Desktop Driving Simulator - Test Pii-chan without a car
+Desktop Driving Simulator - Test Mira without a car
 
 Pygame GUI mode:
     SPACE       Engine on/off
@@ -8,7 +8,7 @@ Pygame GUI mode:
     B           Hard brake
     O           Toggle door
     S           Toggle idle chatter (shush)
-    F           Force Pii-chan to speak
+    F           Force Mira to speak
     C           Chat (type a message)
     ESC         Quit
 
@@ -66,7 +66,7 @@ def _find_japanese_font():
 
 
 class DrivingSimulator:
-    """Interactive driving simulator for testing Pii-chan."""
+    """Interactive driving simulator for testing Mira."""
 
     def __init__(self, args, config: Optional[Config] = None):
         self.args = args
@@ -110,7 +110,7 @@ class DrivingSimulator:
 
         pygame.init()
         self.screen = pygame.display.set_mode((900, 650))
-        pygame.display.set_caption("Pii-chan Simulator")
+        pygame.display.set_caption("Mira Simulator")
         self.clock = pygame.time.Clock()
 
         # Try to load a Japanese-capable font; fall back to default
@@ -123,7 +123,7 @@ class DrivingSimulator:
         self.running = True
 
         # Greeting
-        self.voice.speak("Beep! Pii-chan online. Ready when you are!", blocking=False)
+        self.voice.speak("Beep! Mira online. Ready when you are!", blocking=False)
 
         # Reuse the shared think loop from main.py
         thinker = threading.Thread(
@@ -280,7 +280,7 @@ class DrivingSimulator:
         self.screen.fill((30, 30, 40))
 
         # ---- Title ----
-        self._text("Pii-chan Driving Simulator", 20, 15, (255, 255, 255))
+        self._text("Mira Driving Simulator", 20, 15, (255, 255, 255))
 
         # ---- Car state (left column) ----
         y = 60
@@ -395,7 +395,7 @@ class DrivingSimulator:
         self.can.start()
         self.running = True
 
-        self.voice.speak("Beep! Pii-chan online. Ready when you are!", blocking=False)
+        self.voice.speak("Beep! Mira online. Ready when you are!", blocking=False)
 
         # Reuse shared think loop
         _main.running = True
@@ -411,7 +411,7 @@ class DrivingSimulator:
         try:
             while self.running:
                 try:
-                    cmd = input("pii> ").strip()
+                    cmd = input("mira>").strip()
                 except EOFError:
                     break
 
