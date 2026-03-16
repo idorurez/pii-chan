@@ -65,29 +65,29 @@
 </head>
 <body>
 
-<div id="status">Loading...</div>
+<div id="status">Loading... (v3)</div>
 <div id="fps">FPS: --</div>
 
 <div id="controls" style="display:none">
     <div><b>Expression Test</b> (or press 1-9)</div>
     <div>
-        <button onclick="setExpression('neutral')">Neutral</button>
-        <button onclick="setExpression('happy')">Happy</button>
-        <button onclick="setExpression('sad')">Sad</button>
-        <button onclick="setExpression('surprised')">Surprised</button>
-        <button onclick="setExpression('angry')">Angry</button>
+        <button onclick="setExpressionTarget('neutral')">Neutral</button>
+        <button onclick="setExpressionTarget('happy')">Happy</button>
+        <button onclick="setExpressionTarget('sad')">Sad</button>
+        <button onclick="setExpressionTarget('surprised')">Surprised</button>
+        <button onclick="setExpressionTarget('angry')">Angry</button>
     </div>
     <div style="margin-top:8px"><b>Parameters</b></div>
     <div>
         Mouth: <input type="range" id="mouthSlider" min="0" max="100" value="0"
-               oninput="setMouth(this.value/100)">
+               oninput="overrides.ParamMouthOpenY = this.value/100; document.getElementById('mouthVal').textContent = (this.value/100).toFixed(2)">
         <span id="mouthVal">0</span>
     </div>
     <div>
         Eye X: <input type="range" id="eyeXSlider" min="-100" max="100" value="0"
-               oninput="setEyeX(this.value/100)">
+               oninput="overrides.ParamEyeBallX = this.value/100">
         Eye Y: <input type="range" id="eyeYSlider" min="-100" max="100" value="0"
-               oninput="setEyeY(this.value/100)">
+               oninput="overrides.ParamEyeBallY = this.value/100">
     </div>
     <div style="margin-top:4px; color:#888">
         Press 'd' to toggle controls | Move mouse for eye tracking
@@ -104,27 +104,18 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
 
 <script>
-const status = document.getElementById('status');
+const statusEl = document.getElementById('status');
 const fpsEl = document.getElementById('fps');
 const controls = document.getElementById('controls');
 
 // FPS counter
 let frameCount = 0;
 let lastFpsTime = performance.now();
-function updateFps() {
-    frameCount++;
-    const now = performance.now();
-    if (now - lastFpsTime >= 1000) {
-        fpsEl.textContent = `FPS: ${frameCount}`;
-        frameCount = 0;
-        lastFpsTime = now;
-    }
-}
 
 // Check for Live2D core
 if (typeof Live2DCubismCore === 'undefined') {
-    status.textContent = 'ERROR: Live2D Cubism Core not loaded';
-    status.className = 'error';
+    statusEl.textContent = 'ERROR: Live2D Cubism Core not loaded';
+    statusEl.className = 'error';
     throw new Error('Cubism Core not loaded');
 }
 
@@ -138,20 +129,23 @@ const app = new PIXI.Application({
 });
 document.body.appendChild(app.view);
 
-// State
+// === STATE ===
 let model = null;
 let wsConnected = false;
+let currentlySpeaking = false;
 
-// Model path - change this to test different models
-// Download a sample model and place in ui/live2d_sample/
+// Parameter overrides — these get applied EVERY FRAME after the model's internal update
+// This is the key: the model's motions/physics run first, then we force our values on top
+const overrides = {};
+
 const MODEL_PATH = 'live2d_sample/Hiyori.model3.json';
 
 async function loadModel() {
-    status.textContent = 'Loading Live2D model...';
+    statusEl.textContent = 'Loading Live2D model...';
 
     try {
         model = await PIXI.live2d.Live2DModel.from(MODEL_PATH, {
-            autoInteract: false,  // we control parameters manually
+            autoInteract: false,
         });
 
         // Scale and position
@@ -166,128 +160,147 @@ async function loadModel() {
 
         app.stage.addChild(model);
 
-        status.textContent = 'Model loaded! Press d for controls.';
-        status.className = '';
+        // Hook into the motion manager's update to apply our overrides AFTER motions run
+        // This is the documented approach from pixi-live2d-display
+        const origMgrUpdate = model.internalModel.motionManager.update.bind(
+            model.internalModel.motionManager
+        );
+        model.internalModel.motionManager.update = (...args) => {
+            const result = origMgrUpdate(...args);
+            const cm = model.internalModel.coreModel;
+
+            // Speaking mouth animation — override LipSync param after motions
+            if (currentlySpeaking) {
+                const t = performance.now() / 120;
+                const mouth = 0.4 + Math.sin(t) * 0.25 + Math.sin(t * 2.7) * 0.15;
+                cm.setParameterValueById('ParamMouthOpenY', Math.max(0, mouth));
+            }
+
+            // Apply all parameter overrides after motions
+            for (const [param, value] of Object.entries(overrides)) {
+                cm.setParameterValueById(param, value);
+            }
+
+            return result;
+        };
+
+        // FPS counter on ticker
+        app.ticker.add(() => {
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFpsTime >= 1000) {
+                fpsEl.textContent = `FPS: ${frameCount}`;
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+        });
+
+        statusEl.textContent = 'Model loaded (v3)';
+        statusEl.className = '';
         controls.style.display = 'block';
 
-        // FPS monitoring
-        app.ticker.add(() => updateFps());
-
-        // Try WebSocket connection to face server
         connectWebSocket();
 
-        console.log('Model loaded successfully');
-        console.log('Available expressions:', model.internalModel.motionManager);
+        console.log('Model loaded successfully (v3)');
 
     } catch (e) {
-        status.textContent = `ERROR: ${e.message}`;
-        status.className = 'error';
+        statusEl.textContent = `ERROR: ${e.message}`;
+        statusEl.className = 'error';
         console.error('Failed to load model:', e);
 
         if (e.message.includes('404') || e.message.includes('fetch')) {
-            status.textContent = 'Model not found. See console for setup instructions.';
+            statusEl.textContent = 'Model not found. See console for setup instructions.';
             console.log(`
 === LIVE2D TEST SETUP ===
 
 1. Download a free sample model from:
    https://www.live2d.com/en/sdk/download/web/
-   (Download "Cubism SDK for Web" and look in Samples/Resources/)
-
-   Or use Hiyori Free model:
-   https://cdn.jsdelivr.net/gh/nicx519y/nicx519y.github.io/demo/live2d/Resources/Hiyori/
 
 2. Place the model files in:
    ui/live2d_sample/
 
-3. The folder should contain:
-   - *.model3.json (manifest)
-   - *.moc3 (model binary)
-   - *.png (textures)
-   - *.physics3.json (optional)
-   - *.exp3.json (expressions, optional)
-
-4. Update MODEL_PATH in this file if the .model3.json filename differs.
-
-5. Reload this page.
+3. Reload this page.
 `);
         }
     }
 }
 
-// === PARAMETER CONTROL ===
+// === EXPRESSION TARGETS ===
+// Instead of setting params once, we store them as persistent overrides
 
-function setParam(id, value) {
-    if (!model) return;
-    const cm = model.internalModel.coreModel;
-    cm.setParameterValueById(id, value);
-}
+function setExpressionTarget(name) {
+    // Clear previous expression overrides
+    delete overrides.ParamEyeLOpen;
+    delete overrides.ParamEyeROpen;
+    delete overrides.ParamEyeLSmile;
+    delete overrides.ParamEyeRSmile;
+    delete overrides.ParamMouthForm;
+    delete overrides.ParamBrowLY;
+    delete overrides.ParamBrowRY;
+    delete overrides.ParamBrowLAngle;
+    delete overrides.ParamBrowRAngle;
+    delete overrides.ParamMouthOpenY;
 
-function setMouth(value) {
-    document.getElementById('mouthVal').textContent = value.toFixed(2);
-    setParam('ParamMouthOpenY', value);
-}
-
-function setEyeX(value) {
-    setParam('ParamEyeBallX', value);
-}
-
-function setEyeY(value) {
-    setParam('ParamEyeBallY', value);
-}
-
-function setExpression(name) {
-    if (!model) return;
-    // Map expression names to parameter bundles
-    const cm = model.internalModel.coreModel;
     const expressions = {
-        neutral: () => {
-            setParam('ParamEyeLOpen', 1.0);
-            setParam('ParamEyeROpen', 1.0);
-            setParam('ParamMouthForm', 0);
-            setParam('ParamBrowLY', 0);
-            setParam('ParamBrowRY', 0);
+        neutral: {
+            ParamEyeLOpen: 1.0,
+            ParamEyeROpen: 1.0,
+            ParamMouthForm: 0,
+            ParamBrowLY: 0,
+            ParamBrowRY: 0,
         },
-        happy: () => {
-            setParam('ParamEyeLSmile', 1.0);
-            setParam('ParamEyeRSmile', 1.0);
-            setParam('ParamMouthForm', 1.0);
+        happy: {
+            ParamEyeLSmile: 1.0,
+            ParamEyeRSmile: 1.0,
+            ParamMouthForm: 1.0,
         },
-        sad: () => {
-            setParam('ParamBrowLY', -0.5);
-            setParam('ParamBrowRY', -0.5);
-            setParam('ParamMouthForm', -0.5);
-            setParam('ParamEyeLOpen', 0.7);
-            setParam('ParamEyeROpen', 0.7);
+        sad: {
+            ParamBrowLY: -0.5,
+            ParamBrowRY: -0.5,
+            ParamMouthForm: -0.5,
+            ParamEyeLOpen: 0.7,
+            ParamEyeROpen: 0.7,
         },
-        surprised: () => {
-            setParam('ParamEyeLOpen', 1.3);
-            setParam('ParamEyeROpen', 1.3);
-            setParam('ParamBrowLY', 1.0);
-            setParam('ParamBrowRY', 1.0);
-            setParam('ParamMouthOpenY', 0.5);
+        surprised: {
+            ParamEyeLOpen: 1.3,
+            ParamEyeROpen: 1.3,
+            ParamBrowLY: 1.0,
+            ParamBrowRY: 1.0,
+            ParamMouthOpenY: 0.5,
         },
-        angry: () => {
-            setParam('ParamBrowLY', -1.0);
-            setParam('ParamBrowRY', -1.0);
-            setParam('ParamBrowLAngle', -0.5);
-            setParam('ParamBrowRAngle', -0.5);
-            setParam('ParamMouthForm', -0.7);
+        angry: {
+            ParamBrowLY: -1.0,
+            ParamBrowRY: -1.0,
+            ParamBrowLAngle: -0.5,
+            ParamBrowRAngle: -0.5,
+            ParamMouthForm: -0.7,
+        },
+        talking: {
+            // mouth handled by currentlySpeaking in ticker
+        },
+        thinking: {
+            ParamEyeBallX: 0.3,
+            ParamEyeBallY: 0.2,
+            ParamAngleX: 5,
+            ParamAngleY: 3,
         },
     };
-    if (expressions[name]) expressions[name]();
+
+    if (expressions[name]) {
+        Object.assign(overrides, expressions[name]);
+    }
 }
 
 // === MOUSE EYE TRACKING ===
 
 document.addEventListener('mousemove', (e) => {
     if (!model) return;
-    const x = (e.clientX / window.innerWidth) * 2 - 1;  // -1 to 1
+    const x = (e.clientX / window.innerWidth) * 2 - 1;
     const y = (e.clientY / window.innerHeight) * 2 - 1;
-    setParam('ParamEyeBallX', x * 0.8);
-    setParam('ParamEyeBallY', -y * 0.5);
-    // Slight head turn following eyes
-    setParam('ParamAngleX', x * 15);
-    setParam('ParamAngleY', -y * 10);
+    overrides.ParamEyeBallX = x * 0.8;
+    overrides.ParamEyeBallY = -y * 0.5;
+    overrides.ParamAngleX = x * 15;
+    overrides.ParamAngleY = -y * 10;
 });
 
 // === KEYBOARD CONTROLS ===
@@ -295,11 +308,11 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('keydown', (e) => {
     switch(e.key) {
         case 'd': controls.style.display = controls.style.display === 'none' ? 'block' : 'none'; break;
-        case '1': setExpression('neutral'); break;
-        case '2': setExpression('happy'); break;
-        case '3': setExpression('sad'); break;
-        case '4': setExpression('surprised'); break;
-        case '5': setExpression('angry'); break;
+        case '1': setExpressionTarget('neutral'); break;
+        case '2': setExpressionTarget('happy'); break;
+        case '3': setExpressionTarget('sad'); break;
+        case '4': setExpressionTarget('surprised'); break;
+        case '5': setExpressionTarget('angry'); break;
     }
 });
 
@@ -307,15 +320,15 @@ document.addEventListener('keydown', (e) => {
 
 function connectWebSocket() {
     const wsUrl = `ws://${window.location.hostname}:18793`;
-    status.textContent += ' | Connecting to face server...';
+    statusEl.textContent += ' | Connecting...';
 
     try {
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             wsConnected = true;
-            status.textContent = 'Connected to face server';
-            status.className = '';
+            statusEl.textContent = 'Connected (v3)';
+            statusEl.className = '';
         };
 
         ws.onmessage = (event) => {
@@ -329,44 +342,43 @@ function connectWebSocket() {
 
         ws.onclose = () => {
             wsConnected = false;
-            status.textContent = 'Face server disconnected (standalone mode)';
-            status.className = 'warn';
-            // Retry in 5s
+            statusEl.textContent = 'Disconnected (standalone)';
+            statusEl.className = 'warn';
             setTimeout(connectWebSocket, 5000);
         };
 
         ws.onerror = () => {
-            status.textContent = 'No face server (standalone mode - use controls)';
-            status.className = 'warn';
+            statusEl.textContent = 'No server (standalone)';
+            statusEl.className = 'warn';
         };
     } catch (e) {
-        status.textContent = 'Standalone mode (no face server)';
-        status.className = 'warn';
+        statusEl.textContent = 'Standalone mode';
+        statusEl.className = 'warn';
     }
 }
 
 function applyFaceState(state) {
     if (!model) return;
 
-    // Map FaceState from Python to Live2D parameters
-    if (state.mouthOpen !== undefined) {
-        setParam('ParamMouthOpenY', state.mouthOpen);
+    if (state.mouthOpen !== undefined && !currentlySpeaking) {
+        overrides.ParamMouthOpenY = state.mouthOpen;
     }
     if (state.eyeTargetX !== undefined) {
-        setParam('ParamEyeBallX', state.eyeTargetX * 0.8);
-        setParam('ParamAngleX', state.eyeTargetX * 15);
+        overrides.ParamEyeBallX = state.eyeTargetX * 0.8;
+        overrides.ParamAngleX = state.eyeTargetX * 15;
     }
     if (state.eyeTargetY !== undefined) {
-        setParam('ParamEyeBallY', state.eyeTargetY * 0.5);
-        setParam('ParamAngleY', state.eyeTargetY * 10);
+        overrides.ParamEyeBallY = state.eyeTargetY * 0.5;
+        overrides.ParamAngleY = state.eyeTargetY * 10;
     }
     if (state.expression) {
-        setExpression(state.expression);
+        setExpressionTarget(state.expression);
     }
-    if (state.isSpeaking) {
-        // Simulate talking with mouth movement
-        const t = performance.now() / 150;
-        setParam('ParamMouthOpenY', 0.3 + Math.sin(t) * 0.3);
+    if (state.isSpeaking !== undefined) {
+        currentlySpeaking = state.isSpeaking;
+        if (!state.isSpeaking) {
+            delete overrides.ParamMouthOpenY;
+        }
     }
 }
 
@@ -374,10 +386,6 @@ function applyFaceState(state) {
 
 window.addEventListener('resize', () => {
     if (!model) return;
-    const scale = Math.min(
-        window.innerWidth / model.width * model.scale.x,
-        window.innerHeight / model.height * model.scale.y
-    );
     model.x = window.innerWidth / 2;
     model.y = window.innerHeight / 2;
 });

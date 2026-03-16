@@ -6,11 +6,14 @@
 - `src/face.py` — Expression controller with state management
 - `src/face_server.py` — WebSocket (port 18793) + HTTP server (port 8080)
 - `ui/index.html` — CSS placeholder face with all expressions working
+- `ui/live2d_test.html` — Live2D Cubism 4 renderer (Hiyori model, 60fps on Pi 5)
+- `ui/live2d_sample/` — Hiyori model assets (moc3, textures, physics, motions)
 - Wired into `main.py` voice loop (thinking/speaking/listening states)
 - ComfyUI workflow for generating consistent character sprites
+- **Live2D rendering tested on Pi 5 — 60fps vsync-locked in kiosk mode**
 
 ⏳ **Waiting on:**
-- Actual character sprites from ComfyUI
+- Custom Mira Live2D model (currently using sample Hiyori)
 - Swap placeholder CSS shapes with real PNGs
 
 ## Architecture
@@ -76,32 +79,68 @@ mira_confused.png
 
 ## How to Test
 
+### Live2D Test (recommended)
+
 ```bash
 cd ~/mira
-source venv/bin/activate
-pip install websockets  # if needed
 
-# Test face server standalone (cycles through expressions)
-python -m src.face_server
+# Start the face server (serves ui/ on port 8080, WebSocket on 18793)
+./venv/bin/python -m src.face_server
+
+# Launch Chromium in kiosk mode (fullscreen, no taskbar/chrome)
+DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/1000 \
+  chromium --password-store=basic --no-first-run \
+  --disable-session-crashed-bubble --kiosk \
+  http://localhost:8080/live2d_test.html
+```
+
+**Controls (requires keyboard):**
+- Press `d` to toggle expression controls
+- Press `1-5` for expressions (neutral/happy/sad/surprised/angry)
+- Mouse movement controls eye tracking + head tilt
+
+### CSS Placeholder Test
+
+```bash
+cd ~/mira
+./venv/bin/python -m src.face_server
 
 # Open browser to http://localhost:8080
 # Press 'd' for debug panel to manually test expressions
 ```
 
+## Kiosk Mode Notes
+
+- Binary is `chromium` (not `chromium-browser`) on Raspberry Pi OS
+- Use `--password-store=basic` to bypass the keyring prompt
+- Use `--kiosk` for true fullscreen (no taskbar, no address bar)
+- Must set `WAYLAND_DISPLAY=wayland-0` and `XDG_RUNTIME_DIR=/run/user/1000` when launching from SSH
+- Renders at 60fps vsync-locked on Pi 5 (VideoCore VII GPU)
+- Kill with `pkill -9 chromium` from SSH since kiosk mode has no close button
+
 ## Next Steps
 
-1. Generate sprites with ComfyUI (`comfyui/mira_expression_workflow.json`)
-2. Place PNGs in `ui/sprites/`
-3. Update `ui/index.html` to use sprites instead of CSS shapes
-4. Test crossfade transitions
-5. Add talking sprite sheet animation
-6. Test on Pi display
+1. Replace Hiyori sample model with custom Mira Live2D model
+2. Wire face server expressions into Live2D parameters (happy/sad/thinking/etc.)
+3. Add talking mouth animation driven by TTS state
+4. Set up auto-launch on boot (systemd service for face server + chromium kiosk)
+5. Test on dedicated display (HyperPixel 4.0)
 
 ## Files
 
 - `src/face.py` — Python expression controller
 - `src/face_server.py` — WebSocket + HTTP server
-- `ui/index.html` — Browser renderer (currently CSS placeholder)
+- `ui/index.html` — Browser renderer (CSS placeholder)
+- `ui/live2d_test.html` — Live2D Cubism 4 renderer (PixiJS + pixi-live2d-display)
+- `ui/live2d_sample/` — Hiyori sample model (model3.json, moc3, textures, physics, motions)
 - `ui/sprites/` — Empty folder for character sprites
 - `comfyui/mira_expression_workflow.json` — IP-Adapter workflow
 - `comfyui/README.md` — ComfyUI setup instructions
+
+## Dependencies
+
+- `websockets` — Python WebSocket server for face state broadcast
+- CDN-loaded in `live2d_test.html`:
+  - PixiJS 6.5.10
+  - Live2D Cubism Core (Cubism 4)
+  - pixi-live2d-display 0.4.0

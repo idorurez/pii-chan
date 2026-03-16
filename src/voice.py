@@ -89,7 +89,7 @@ class Voice:
     # Default paths for VOICEVOX Core files (relative to project root)
     _VOICEVOX_ONNX = "./models/voicevox/voicevox_core/onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3"
     _VOICEVOX_DICT = "./models/voicevox/voicevox_core/dict/open_jtalk_dic_utf_8-1.11"
-    _VOICEVOX_VVM = "./models/voicevox/voicevox_core/models/vvms/0.vvm"  # contains ずんだもん
+    _VOICEVOX_VVM_DIR = "./models/voicevox/voicevox_core/models/vvms"
 
     # Default paths for Kokoro model files
     _KOKORO_MODEL = "./models/kokoro/kokoro-v1.0.onnx"
@@ -140,7 +140,7 @@ class Voice:
                 VOICEVOX_CORE_AVAILABLE
                 and Path(self._VOICEVOX_ONNX).exists()
                 and Path(self._VOICEVOX_DICT).exists()
-                and Path(self._VOICEVOX_VVM).exists()
+                and Path(self._VOICEVOX_VVM_DIR).is_dir()
             )
         return self._voicevox_ok
 
@@ -218,8 +218,10 @@ class Voice:
             ort = Onnxruntime.load_once(filename=self._VOICEVOX_ONNX)
             jtalk = OpenJtalk(self._VOICEVOX_DICT)
             self._vv_synth = Synthesizer(ort, jtalk)
-            model = VoiceModelFile.open(self._VOICEVOX_VVM)
-            self._vv_synth.load_voice_model(model)
+            vvm_dir = Path(self._VOICEVOX_VVM_DIR)
+            for vvm_file in sorted(vvm_dir.glob("*.vvm")):
+                model = VoiceModelFile.open(str(vvm_file))
+                self._vv_synth.load_voice_model(model)
             print(f"[voice] VOICEVOX Core loaded (style_id={self.speaker_id})")
         return self._vv_synth
 
