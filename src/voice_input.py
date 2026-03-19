@@ -78,6 +78,7 @@ class VoiceInput:
         self.silence_duration = silence_duration
         self.on_speech = on_speech
         self.on_wake = on_wake
+        self.on_speech_fail = None  # Called when recording fails (silence, too short)
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -239,10 +240,16 @@ class VoiceInput:
                         text = self._stt.transcribe(audio)
                         if text and len(text.split()) >= 2 and self.on_speech:
                             self.on_speech(text)
-                        elif text and len(text.split()) < 2:
-                            print(f"  (Too short, ignoring: \"{text}\")")
-                        elif not text:
-                            print("  (Didn't catch that)")
+                        else:
+                            if text and len(text.split()) < 2:
+                                print(f"  (Too short, ignoring: \"{text}\")")
+                            elif not text:
+                                print("  (Didn't catch that)")
+                            if self.on_speech_fail:
+                                self.on_speech_fail()
+                    else:
+                        if self.on_speech_fail:
+                            self.on_speech_fail()
 
     def _record_speech(self, audio_queue: queue.Queue, native_rate: int) -> Optional[np.ndarray]:
         """Record until silence or max duration. Returns 16kHz int16 numpy array."""

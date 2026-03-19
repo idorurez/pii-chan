@@ -226,9 +226,14 @@ async function loadModel() {
 }
 
 // === EXPRESSION TARGETS ===
-// Instead of setting params once, we store them as persistent overrides
+// Expression overrides are stored separately from eye-tracking overrides.
+// When a non-neutral expression is active, expression angle params take priority.
+
+let activeExpression = 'neutral';
 
 function setExpressionTarget(name) {
+    activeExpression = name;
+
     // Clear previous expression overrides
     delete overrides.ParamEyeLOpen;
     delete overrides.ParamEyeROpen;
@@ -240,6 +245,12 @@ function setExpressionTarget(name) {
     delete overrides.ParamBrowLAngle;
     delete overrides.ParamBrowRAngle;
     delete overrides.ParamMouthOpenY;
+    delete overrides.ParamAngleX;
+    delete overrides.ParamAngleY;
+    delete overrides.ParamAngleZ;
+    delete overrides.ParamEyeBallX;
+    delete overrides.ParamEyeBallY;
+    delete overrides.ParamBodyAngleX;
 
     const expressions = {
         neutral: {
@@ -248,9 +259,6 @@ function setExpressionTarget(name) {
             ParamMouthForm: 0,
             ParamBrowLY: 0,
             ParamBrowRY: 0,
-            ParamAngleX: 0,
-            ParamAngleY: 0,
-            ParamAngleZ: 0,
         },
         happy: {
             ParamEyeLSmile: 1.0,
@@ -258,7 +266,8 @@ function setExpressionTarget(name) {
             ParamMouthForm: 1.0,
             ParamBrowLY: 0.5,
             ParamBrowRY: 0.5,
-            ParamAngleZ: 3,
+            ParamAngleZ: 5,
+            ParamBodyAngleX: 3,
         },
         sad: {
             ParamBrowLY: -1.0,
@@ -268,26 +277,29 @@ function setExpressionTarget(name) {
             ParamMouthForm: -0.7,
             ParamEyeLOpen: 0.5,
             ParamEyeROpen: 0.5,
-            ParamAngleY: -5,
-            ParamAngleZ: -3,
+            ParamAngleY: -8,
+            ParamAngleZ: -5,
         },
         surprised: {
-            ParamEyeLOpen: 1.4,
-            ParamEyeROpen: 1.4,
-            ParamBrowLY: 1.5,
-            ParamBrowRY: 1.5,
-            ParamMouthOpenY: 0.7,
-            ParamAngleY: 3,
+            ParamEyeLOpen: 1.5,
+            ParamEyeROpen: 1.5,
+            ParamBrowLY: 2.0,
+            ParamBrowRY: 2.0,
+            ParamMouthOpenY: 0.8,
+            ParamAngleY: 8,
+            ParamAngleZ: -2,
+            ParamBodyAngleX: -3,
         },
         angry: {
-            ParamBrowLY: -1.5,
-            ParamBrowRY: -1.5,
+            ParamBrowLY: -2.0,
+            ParamBrowRY: -2.0,
             ParamBrowLAngle: -1.0,
             ParamBrowRAngle: -1.0,
             ParamMouthForm: -1.0,
-            ParamEyeLOpen: 0.8,
-            ParamEyeROpen: 0.8,
-            ParamAngleX: -3,
+            ParamEyeLOpen: 0.7,
+            ParamEyeROpen: 0.7,
+            ParamAngleX: -5,
+            ParamAngleZ: 2,
         },
         talking: {
             // mouth handled by currentlySpeaking in ticker
@@ -295,15 +307,15 @@ function setExpressionTarget(name) {
             ParamBrowRY: 0.2,
         },
         thinking: {
-            ParamEyeBallX: 0.6,
-            ParamEyeBallY: 0.4,
-            ParamAngleX: 10,
-            ParamAngleY: 5,
-            ParamAngleZ: -3,
-            ParamBrowLY: 0.3,
-            ParamBrowRY: -0.2,
-            ParamEyeLOpen: 0.8,
-            ParamEyeROpen: 0.9,
+            ParamEyeBallX: 0.7,
+            ParamEyeBallY: 0.5,
+            ParamAngleX: 12,
+            ParamAngleY: 8,
+            ParamAngleZ: -5,
+            ParamBrowLY: 0.5,
+            ParamBrowRY: -0.3,
+            ParamEyeLOpen: 0.7,
+            ParamEyeROpen: 0.85,
         },
     };
 
@@ -316,6 +328,8 @@ function setExpressionTarget(name) {
 
 document.addEventListener('mousemove', (e) => {
     if (!model) return;
+    // Don't override when a non-neutral expression is active
+    if (activeExpression !== 'neutral' && activeExpression !== 'talking') return;
     const x = (e.clientX / window.innerWidth) * 2 - 1;
     const y = (e.clientY / window.innerHeight) * 2 - 1;
     overrides.ParamEyeBallX = x * 0.8;
@@ -381,20 +395,27 @@ function connectWebSocket() {
 function applyFaceState(state) {
     if (!model) return;
 
+    // Apply expression FIRST — only when it actually changes
+    if (state.expression && state.expression !== activeExpression) {
+        setExpressionTarget(state.expression);
+    }
+
     if (state.mouthOpen !== undefined && !currentlySpeaking) {
         overrides.ParamMouthOpenY = state.mouthOpen;
     }
-    if (state.eyeTargetX !== undefined) {
-        overrides.ParamEyeBallX = state.eyeTargetX * 0.8;
-        overrides.ParamAngleX = state.eyeTargetX * 15;
+
+    // Only apply eye target angles when expression doesn't own them
+    if (activeExpression === 'neutral' || activeExpression === 'talking') {
+        if (state.eyeTargetX !== undefined) {
+            overrides.ParamEyeBallX = state.eyeTargetX * 0.8;
+            overrides.ParamAngleX = state.eyeTargetX * 15;
+        }
+        if (state.eyeTargetY !== undefined) {
+            overrides.ParamEyeBallY = state.eyeTargetY * 0.5;
+            overrides.ParamAngleY = state.eyeTargetY * 10;
+        }
     }
-    if (state.eyeTargetY !== undefined) {
-        overrides.ParamEyeBallY = state.eyeTargetY * 0.5;
-        overrides.ParamAngleY = state.eyeTargetY * 10;
-    }
-    if (state.expression) {
-        setExpressionTarget(state.expression);
-    }
+
     if (state.isSpeaking !== undefined) {
         currentlySpeaking = state.isSpeaking;
         if (!state.isSpeaking) {

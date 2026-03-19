@@ -550,8 +550,13 @@ def run_voice_mode(args, config):
     voice.speak("ミラ online. Say the wake word when you need me!", blocking=True)
     face.set_expression(Expression.NEUTRAL)
 
+    _state = {"post_tts": False}
+
     def on_wake():
         """Called when wake word is detected."""
+        if _state["post_tts"]:
+            print("  [wake — suppressed (post-TTS)]")
+            return
         print("  [wake]")
         face.listening()
 
@@ -565,25 +570,32 @@ def run_voice_mode(args, config):
         if gateway and gateway.connected:
             # Streamed: TTS starts on first complete sentence while Claude keeps generating
             sq = queue.Queue()
+            _timing = {"first_token": None, "first_sentence": None, "tts_start": None}
+
+            def on_delta(d):
+                if _timing["first_token"] is None:
+                    _timing["first_token"] = time.time()
 
             def tts_worker():
                 voice.speak_streamed(
                     sq,
-                    on_start=lambda: face.start_speaking(),
+                    on_start=lambda: (face.start_speaking(), _timing.__setitem__("tts_start", time.time())),
                     on_done=lambda: face.stop_speaking(),
                 )
 
             tts_thread = threading.Thread(target=tts_worker, daemon=True)
             tts_thread.start()
 
-            response = gateway.send_streamed(text, sq)
+            response = gateway.send_streamed(text, sq, on_delta=on_delta)
             tts_thread.join(timeout=60)
 
             t1 = time.time()
             if response is None:
                 response = "Sorry, I couldn't reach the gateway."
             print(f"  ミラ: \"{response}\"")
-            print(f"  [{t1-t0:.1f}s total]")
+            ttft = (_timing["first_token"] - t0) if _timing["first_token"] else 0
+            tts_t = (t1 - _timing["tts_start"]) if _timing["tts_start"] else 0
+            print(f"  [TTFT: {ttft:.1f}s | TTS: {tts_t:.1f}s | total: {t1-t0:.1f}s]")
         else:
             response = "Sorry, I couldn't reach the gateway. Try again."
             print(f"  ミラ: \"{response}\"")
@@ -592,16 +604,29 @@ def run_voice_mode(args, config):
             face.stop_speaking()
 
         # Cooldown to avoid self-triggering from speaker audio
-        time.sleep(2.0)
+        _state["post_tts"] = True
+        time.sleep(3.0)
+        voice_input.drain_queue()
+        time.sleep(0.5)
         voice_input.drain_queue()
         voice_input.muted = False
+        # Suppress false wakes for a bit after unmuting
+        time.sleep(2.0)
+        _state["post_tts"] = False
+        voice.chime(ascending=False)  # "done" chime — ready for next command
+        face.set_expression(Expression.NEUTRAL)
 
         if brain.current_session:
             memory.log_speech(response, brain.current_session.session_id)
 
+    def on_speech_fail():
+        """Called when wake triggered but no usable speech captured."""
+        face.set_expression(Expression.NEUTRAL)
+
     # Wire up callbacks and start listening
     voice_input.on_wake = on_wake
     voice_input.on_speech = on_speech
+    voice_input.on_speech_fail = on_speech_fail
     voice_input.start()
 
     # Start background think loop (CAN events, idle chatter)
