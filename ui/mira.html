@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mira</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body {
+            background: #000;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: none;
+        }
+
+        #avatar {
+            position: relative;
+            width: 100vh;
+            height: 100vh;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+        #avatar img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 0.25s ease-in-out;
+        }
+
+        #avatar img.active {
+            opacity: 1;
+        }
+
+        /* Subtle idle breathing animation */
+        @keyframes breathe {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-3px) scale(1.003); }
+        }
+
+        #avatar.idle {
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        /* Talking bob — gentle sway */
+        @keyframes talkBob {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+
+        #avatar.talking {
+            animation: talkBob 0.8s ease-in-out infinite;
+        }
+
+        /* Blink overlay */
+        #blink-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 0.08s ease-in-out;
+            z-index: 10;
+        }
+
+        #blink-overlay.blink {
+            opacity: 1;
+        }
+
+        #status {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        #status.warn { color: #fa0; }
+        #status.error { color: #f44; }
+    </style>
+</head>
+<body>
+
+<div id="avatar" class="idle">
+    <!-- All expressions preloaded, only one active at a time -->
+    <img id="expr-neutral" src="avatar/mira/expressions/mira_neutral_00002_.png" class="active">
+    <img id="expr-happy" src="avatar/mira/expressions/mira_happy_00004_.png">
+    <img id="expr-sad" src="avatar/mira/expressions/mira_sad_00001_.png">
+    <img id="expr-surprised" src="avatar/mira/expressions/mira_surprised_00001_.png">
+    <img id="expr-thinking" src="avatar/mira/expressions/mira_thinking_00001_.png">
+    <img id="expr-talking" src="avatar/mira/expressions/mira_talking_00003_.png">
+    <img id="expr-sleepy" src="avatar/mira/expressions/mira_sleepy_00001_.png">
+    <img id="expr-confused" src="avatar/mira/expressions/mira_confused_00017_.png">
+    <img id="expr-excited" src="avatar/mira/expressions/mira_excited_00013_.png">
+    <img id="expr-angry" src="avatar/mira/expressions/mira_confused_00017_.png">
+    <img id="blink-overlay" src="avatar/mira/expressions/mira_eyes_closed_001_nb.png">
+</div>
+
+<div id="status">Loading...</div>
+
+<script>
+const statusEl = document.getElementById('status');
+const avatarEl = document.getElementById('avatar');
+const blinkEl = document.getElementById('blink-overlay');
+
+let currentExpression = 'neutral';
+let isSpeaking = false;
+let talkInterval = null;
+let blinkTimer = null;
+
+// === EXPRESSION SWITCHING ===
+
+function setExpression(name) {
+    if (name === currentExpression) return;
+
+    // Map expression name to element id
+    const el = document.getElementById('expr-' + name);
+    if (!el) {
+        console.warn('Unknown expression:', name);
+        return;
+    }
+
+    // Fade out current, fade in new
+    const current = document.getElementById('expr-' + currentExpression);
+    if (current) current.classList.remove('active');
+    el.classList.add('active');
+    currentExpression = name;
+
+    console.log('Expression:', name);
+}
+
+// === SPEAKING ANIMATION ===
+// Alternate between talking mouth and current expression
+
+function startSpeaking() {
+    if (isSpeaking) return;
+    isSpeaking = true;
+    avatarEl.classList.remove('idle');
+    avatarEl.classList.add('talking');
+    stopBlink();
+
+    // Show talking image on top with opacity fading for smooth mouth movement
+    const talkImg = document.getElementById('expr-talking');
+    talkImg.style.transition = 'opacity 0.2s ease-in-out';
+    talkImg.style.opacity = '1';
+    talkImg.classList.add('active');
+
+    let mouthOpen = true;
+    talkInterval = setInterval(() => {
+        if (!isSpeaking) return;
+        mouthOpen = !mouthOpen;
+        talkImg.style.opacity = mouthOpen ? '1' : '0.3';
+    }, 300 + Math.random() * 200);
+}
+
+function stopSpeaking() {
+    if (!isSpeaking) return;
+    isSpeaking = false;
+    avatarEl.classList.remove('talking');
+    avatarEl.classList.add('idle');
+
+    if (talkInterval) {
+        clearInterval(talkInterval);
+        talkInterval = null;
+    }
+
+    // Make sure talking frame is hidden and current expression is shown
+    const talkImg = document.getElementById('expr-talking');
+    talkImg.style.opacity = '0';
+    talkImg.classList.remove('active');
+    document.getElementById('expr-' + currentExpression)?.classList.add('active');
+    scheduleBlink();
+}
+
+// === BLINKING ===
+
+function doBlink() {
+    if (isSpeaking) return;
+    blinkEl.classList.add('blink');
+    setTimeout(() => {
+        blinkEl.classList.remove('blink');
+        scheduleBlink();
+    }, 120 + Math.random() * 80);
+}
+
+function scheduleBlink() {
+    if (blinkTimer) clearTimeout(blinkTimer);
+    // Blink every 3-6 seconds
+    blinkTimer = setTimeout(doBlink, 3000 + Math.random() * 3000);
+}
+
+function stopBlink() {
+    if (blinkTimer) clearTimeout(blinkTimer);
+    blinkEl.classList.remove('blink');
+}
+
+// === WEBSOCKET ===
+
+function connectWebSocket() {
+    const wsUrl = `ws://${window.location.hostname}:18793`;
+    statusEl.textContent = 'Connecting...';
+
+    try {
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            statusEl.textContent = 'Connected';
+            statusEl.className = '';
+            // Fade out status after a moment
+            setTimeout(() => { statusEl.style.opacity = '0.3'; }, 3000);
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const state = JSON.parse(event.data);
+                applyState(state);
+            } catch (e) {
+                console.warn('Bad message:', e);
+            }
+        };
+
+        ws.onclose = () => {
+            statusEl.textContent = 'Disconnected';
+            statusEl.className = 'warn';
+            statusEl.style.opacity = '1';
+            setTimeout(connectWebSocket, 3000);
+        };
+
+        ws.onerror = () => {
+            statusEl.textContent = 'No server';
+            statusEl.className = 'warn';
+            statusEl.style.opacity = '1';
+        };
+    } catch (e) {
+        statusEl.textContent = 'Standalone';
+        statusEl.className = 'warn';
+    }
+}
+
+function applyState(state) {
+    // Handle speaking state changes first
+    if (state.isSpeaking !== undefined) {
+        if (state.isSpeaking && !isSpeaking) {
+            startSpeaking();
+        } else if (!state.isSpeaking && isSpeaking) {
+            stopSpeaking();
+        }
+    }
+
+    // Apply expression (but not 'talking' — that's handled by speaking animation)
+    if (state.expression && state.expression !== 'talking') {
+        setExpression(state.expression);
+    }
+}
+
+// === KEYBOARD CONTROLS (for testing) ===
+
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case '1': setExpression('neutral'); break;
+        case '2': setExpression('happy'); break;
+        case '3': setExpression('sad'); break;
+        case '4': setExpression('surprised'); break;
+        case '5': setExpression('thinking'); break;
+        case '6': setExpression('confused'); break;
+        case '7': setExpression('excited'); break;
+        case '8': setExpression('sleepy'); break;
+        case 's': isSpeaking ? stopSpeaking() : startSpeaking(); break;
+        case 'b': doBlink(); break;
+    }
+});
+
+// === START ===
+
+// Preload all images
+const images = document.querySelectorAll('#avatar img');
+let loaded = 0;
+images.forEach(img => {
+    if (img.complete) {
+        loaded++;
+    } else {
+        img.addEventListener('load', () => {
+            loaded++;
+            if (loaded === images.length) {
+                statusEl.textContent = 'Ready';
+            }
+        });
+    }
+});
+
+if (loaded === images.length) {
+    statusEl.textContent = 'Ready';
+}
+
+scheduleBlink();
+connectWebSocket();
+</script>
+
+</body>
+</html>
