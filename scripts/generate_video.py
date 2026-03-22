@@ -169,10 +169,35 @@ CRITICAL REQUIREMENTS:
             
             # Try different ways to get video bytes
             if hasattr(gv, 'video'):
-                if hasattr(gv.video, 'video_bytes'):
-                    video_data = gv.video.video_bytes
-                elif isinstance(gv.video, bytes):
-                    video_data = gv.video
+                video = gv.video
+                
+                # Check for direct bytes
+                if hasattr(video, 'video_bytes') and video.video_bytes:
+                    video_data = video.video_bytes
+                elif isinstance(video, bytes):
+                    video_data = video
+                
+                # Check for URI (download required)
+                elif hasattr(video, 'uri') and video.uri:
+                    print(f"Downloading video from: {video.uri[:60]}...")
+                    try:
+                        import urllib.request
+                        req = urllib.request.Request(video.uri)
+                        req.add_header('x-goog-api-key', api_key)
+                        with urllib.request.urlopen(req) as response:
+                            video_data = response.read()
+                        print(f"  Downloaded {len(video_data):,} bytes")
+                    except Exception as e:
+                        print(f"  Download failed: {e}")
+                        # Try with httpx if available
+                        try:
+                            import httpx
+                            resp = httpx.get(video.uri, headers={'x-goog-api-key': api_key})
+                            video_data = resp.content
+                            print(f"  Downloaded {len(video_data):,} bytes (httpx)")
+                        except:
+                            print(f"  Video URL (download manually): {video.uri}")
+                            continue
             
             if video_data:
                 save_path = output_path if i == 0 else output_path.with_stem(f"{output_path.stem}_{i}")
