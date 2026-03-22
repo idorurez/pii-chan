@@ -217,9 +217,9 @@ def main():
 
 # Expression presets
 PRESETS = {
-    "neutral": "subtle idle breathing loop, occasional natural blink every 3-4 seconds, relaxed expression, minimal head movement, calm and peaceful",
-    "thinking": "character looks up and to the right, slight head tilt, thoughtful expression, eyes moving as if pondering, hold pose with subtle movement",
-    "listening": "character tilts head slightly to the side, leans in subtly, attentive focused expression, alert eyes, slight anticipation",
+    "neutral": "subtle idle breathing loop, occasional natural blink every 3-4 seconds, relaxed expression, minimal head movement, calm and peaceful, MOUTH CLOSED - no lip movement, lips stay still",
+    "thinking": "character looks up and to the right, slight head tilt, thoughtful expression, eyes moving as if pondering, hold pose with subtle movement, mouth closed, no lip movement",
+    "listening": "character tilts head slightly to the side, leans in subtly, attentive focused expression, alert eyes, slight anticipation, mouth closed, lips still",
     "talking": "character speaking naturally, mouth opening and closing in conversation rhythm, slight head movements, engaged expression, eyes active",
 }
 
