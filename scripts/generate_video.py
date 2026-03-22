@@ -203,7 +203,7 @@ CRITICAL REQUIREMENTS:
                 save_path = output_path if i == 0 else output_path.with_stem(f"{output_path.stem}_{i}")
                 with open(save_path, 'wb') as f:
                     f.write(video_data)
-                print(f"✓ Saved: {save_path} ({len(video_data):,} bytes)")
+                print(f"[OK] Saved: {save_path} ({len(video_data):,} bytes)")
                 return str(save_path)
     
     print(f"No video data found in result: {result}")
