@@ -227,6 +227,8 @@ def main():
     parser.add_argument("--model", "-m", default="veo-2.0-generate-001",
                        choices=["veo-2.0-generate-001", "veo-3.0-generate-001", "veo-3.0-fast-generate-001"],
                        help="Veo model to use")
+    parser.add_argument("--suffix", "-s", default=None,
+                       help="Suffix to add to output filename (e.g. _v2)")
     
     args = parser.parse_args()
     
@@ -246,10 +248,18 @@ def main():
                 args.reference = ref_path
                 break
     
+    # Build output path with optional suffix
+    output = args.output
+    if not output and args.suffix:
+        from pathlib import Path
+        img_path = Path(args.image)
+        output_dir = img_path.parent.parent / "animations"
+        output = str(output_dir / f"{img_path.stem}{args.suffix}.mp4")
+    
     generate_video(
         image_path=args.image,
         prompt=args.prompt,
-        output_path=args.output,
+        output_path=output,
         duration_seconds=args.duration,
         reference_image_path=args.reference,
         model=args.model,
