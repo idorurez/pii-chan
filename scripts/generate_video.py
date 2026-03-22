@@ -129,9 +129,9 @@ CRITICAL REQUIREMENTS:
     print(f"Generating video with prompt: {prompt[:80]}...")
     print("This may take 1-3 minutes...")
     
-    # Use Veo 2 model for video generation
-    # Note: Model name may vary - check current API docs
-    model = genai.GenerativeModel("veo-2.0-generate-001")
+    # Use Veo 3 model for video generation
+    # Model names to try: veo-3.0-generate-001, veo-2.0-generate-001
+    model = genai.GenerativeModel("veo-3.0-generate-001")
     
     try:
         response = model.generate_content(
