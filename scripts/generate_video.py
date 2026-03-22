@@ -85,18 +85,22 @@ def generate_video(
     print(f"Loading image: {image_path}")
     img_data, img_mime = load_image_as_base64(image_path)
     
-    # Build the prompt
+    # Build the prompt with strict framing requirements
     full_prompt = f"""Animate this anime character image into a seamless looping video.
 
 Animation: {prompt}
 
-Requirements:
-- Keep camera framed exactly as the source image (upper body)
-- Maintain exact character appearance, art style, colors
-- Subtle natural movement only
-- {duration_seconds} second loop-ready animation
-- No background changes
-- Character should not drift or move from position
+CRITICAL REQUIREMENTS:
+- Output resolution: 800x480 (widescreen)
+- Maintain exact art style from source images
+- Use the A-pose full body image as character reference for style consistency
+- FRAMING: Keep upper torso and head visible as shown in first image - expand canvas to 800x480 but maintain this framing
+- Do NOT zoom in or out - keep the same character scale
+- Maintain exact character appearance, colors, details
+- Subtle natural movement only - no dramatic motions
+- {duration_seconds} second seamless loop-ready animation
+- Black background, no changes to background
+- Character should not drift or move position in frame
 """
     
     # Prepare content parts
