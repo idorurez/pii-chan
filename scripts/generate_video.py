@@ -251,7 +251,6 @@ def main():
     # Build output path with optional suffix
     output = args.output
     if not output and args.suffix:
-        from pathlib import Path
         img_path = Path(args.image)
         output_dir = img_path.parent.parent / "animations"
         output = str(output_dir / f"{img_path.stem}{args.suffix}.mp4")
