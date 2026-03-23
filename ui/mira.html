@@ -18,10 +18,8 @@
 
         #avatar {
             position: relative;
-            width: 100vh;
+            width: 100vw;
             height: 100vh;
-            max-width: 100vw;
-            max-height: 100vh;
         }
 
         #avatar img, #avatar video {
@@ -30,7 +28,14 @@
             left: 0;
             width: 100%;
             height: 100%;
+        }
+
+        #avatar img {
             object-fit: contain;
+        }
+
+        #avatar video {
+            object-fit: cover;
             opacity: 0;
             transition: opacity 0.25s ease-in-out;
         }
@@ -212,12 +217,27 @@ function setExpression(name) {
     const newVid = VIDEO_MAP[name] ? document.getElementById(VIDEO_MAP[name]) : null;
     if (newVid) {
         newVid.currentTime = 0;
-        newVid.play().catch(() => {});
+        // Show video element immediately, start playback
         newVid.classList.add('active');
         usingVideo = true;
-        // Video has its own animation — disable breathing + blinking overlays
         avatarEl.classList.remove('idle');
         stopBlink();
+
+        function tryPlay() {
+            newVid.play().then(() => {
+                console.log('Video playing:', name);
+            }).catch((e) => {
+                console.warn('Video play retry for', name, e.message);
+                setTimeout(tryPlay, 500);
+            });
+        }
+
+        if (newVid.readyState >= 2) {
+            tryPlay();
+        } else {
+            newVid.addEventListener('canplay', tryPlay, { once: true });
+            setTimeout(tryPlay, 1000);
+        }
     } else {
         const newImg = document.getElementById('expr-' + name);
         if (!newImg) {
@@ -436,15 +456,32 @@ setStatus(dotNet, valNet, 'gray', 'checking...');
 // Start with neutral video if available
 const initVid = document.getElementById('vid-neutral');
 if (initVid) {
-    initVid.play().then(() => {
-        initVid.classList.add('active');
-        usingVideo = true;
-    }).catch(() => {
-        // Video failed (autoplay blocked?), fall back to static PNG
-        document.getElementById('expr-neutral').classList.add('active');
-        usingVideo = false;
-        scheduleBlink();
-    });
+    // Show PNG immediately as a backdrop while video loads
+    document.getElementById('expr-neutral').classList.add('active');
+    scheduleBlink();
+
+    function tryPlayInit() {
+        initVid.play().then(() => {
+            // Video is playing — swap from PNG to video
+            document.getElementById('expr-neutral').classList.remove('active');
+            initVid.classList.add('active');
+            usingVideo = true;
+            avatarEl.classList.remove('idle');
+            stopBlink();
+            console.log('Initial video playing');
+        }).catch((e) => {
+            console.warn('Video play failed, retrying in 1s:', e.message);
+            setTimeout(tryPlayInit, 1000);
+        });
+    }
+
+    if (initVid.readyState >= 2) {
+        tryPlayInit();
+    } else {
+        initVid.addEventListener('canplay', tryPlayInit, { once: true });
+        // Fallback if canplay never fires
+        setTimeout(tryPlayInit, 2000);
+    }
 } else {
     document.getElementById('expr-neutral').classList.add('active');
     scheduleBlink();
