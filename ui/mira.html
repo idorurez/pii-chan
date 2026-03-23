@@ -24,7 +24,7 @@
             max-height: 100vh;
         }
 
-        #avatar img {
+        #avatar img, #avatar video {
             position: absolute;
             top: 0;
             left: 0;
@@ -35,7 +35,7 @@
             transition: opacity 0.25s ease-in-out;
         }
 
-        #avatar img.active {
+        #avatar img.active, #avatar video.active {
             opacity: 1;
         }
 
@@ -125,8 +125,12 @@
 <body>
 
 <div id="avatar" class="idle">
-    <!-- All expressions preloaded, only one active at a time -->
-    <img id="expr-neutral" src="avatar/mira/expressions/mira_neutral.png" class="active">
+    <!-- Video animations (looping, preferred over static PNGs when available) -->
+    <video id="vid-neutral" src="avatar/mira/animations/mira_neutral.mp4" loop muted playsinline preload="auto"></video>
+    <video id="vid-thinking" src="avatar/mira/animations/mira_thinking_v04.mp4" loop muted playsinline preload="auto"></video>
+
+    <!-- Static PNG fallbacks for expressions without video -->
+    <img id="expr-neutral" src="avatar/mira/expressions/mira_neutral.png">
     <img id="expr-happy" src="avatar/mira/expressions/mira_happy.png">
     <img id="expr-sad" src="avatar/mira/expressions/mira_neutral.png">
     <img id="expr-surprised" src="avatar/mira/expressions/mira_surprised.png">
@@ -182,26 +186,55 @@ let currentExpression = 'neutral';
 let isSpeaking = false;
 let talkInterval = null;
 let blinkTimer = null;
+let usingVideo = false; // true when current expression has a video playing
+
+// Map of expressions that have video animations
+const VIDEO_MAP = {
+    'neutral': 'vid-neutral',
+    'thinking': 'vid-thinking',
+};
 
 // === EXPRESSION SWITCHING ===
 
 function setExpression(name) {
     if (name === currentExpression) return;
 
-    // Map expression name to element id
-    const el = document.getElementById('expr-' + name);
-    if (!el) {
-        console.warn('Unknown expression:', name);
-        return;
+    // Deactivate current expression (video or image)
+    const curVid = VIDEO_MAP[currentExpression] ? document.getElementById(VIDEO_MAP[currentExpression]) : null;
+    const curImg = document.getElementById('expr-' + currentExpression);
+    if (curVid && usingVideo) {
+        curVid.classList.remove('active');
+        curVid.pause();
+    }
+    if (curImg) curImg.classList.remove('active');
+
+    // Activate new expression — prefer video if available
+    const newVid = VIDEO_MAP[name] ? document.getElementById(VIDEO_MAP[name]) : null;
+    if (newVid) {
+        newVid.currentTime = 0;
+        newVid.play().catch(() => {});
+        newVid.classList.add('active');
+        usingVideo = true;
+        // Video has its own animation — disable breathing + blinking overlays
+        avatarEl.classList.remove('idle');
+        stopBlink();
+    } else {
+        const newImg = document.getElementById('expr-' + name);
+        if (!newImg) {
+            console.warn('Unknown expression:', name);
+            return;
+        }
+        newImg.classList.add('active');
+        usingVideo = false;
+        // Static PNG — re-enable breathing + blinking
+        if (!isSpeaking) {
+            avatarEl.classList.add('idle');
+            scheduleBlink();
+        }
     }
 
-    // Fade out current, fade in new
-    const current = document.getElementById('expr-' + currentExpression);
-    if (current) current.classList.remove('active');
-    el.classList.add('active');
     currentExpression = name;
-
-    console.log('Expression:', name);
+    console.log('Expression:', name, usingVideo ? '(video)' : '(png)');
 }
 
 // === SPEAKING ANIMATION ===
@@ -213,6 +246,13 @@ function startSpeaking() {
     avatarEl.classList.remove('idle');
     avatarEl.classList.add('talking');
     stopBlink();
+
+    // Pause any active video during speaking
+    const curVid = VIDEO_MAP[currentExpression] ? document.getElementById(VIDEO_MAP[currentExpression]) : null;
+    if (curVid && usingVideo) {
+        curVid.classList.remove('active');
+        curVid.pause();
+    }
 
     // Show talking image on top with opacity fading for smooth mouth movement
     const talkImg = document.getElementById('expr-talking');
@@ -239,18 +279,26 @@ function stopSpeaking() {
         talkInterval = null;
     }
 
-    // Make sure talking frame is hidden and current expression is shown
+    // Hide talking frame
     const talkImg = document.getElementById('expr-talking');
     talkImg.style.opacity = '0';
     talkImg.classList.remove('active');
-    document.getElementById('expr-' + currentExpression)?.classList.add('active');
-    scheduleBlink();
+
+    // Restore current expression — video or image
+    const curVid = VIDEO_MAP[currentExpression] ? document.getElementById(VIDEO_MAP[currentExpression]) : null;
+    if (curVid && usingVideo) {
+        curVid.play().catch(() => {});
+        curVid.classList.add('active');
+    } else {
+        document.getElementById('expr-' + currentExpression)?.classList.add('active');
+        scheduleBlink();
+    }
 }
 
 // === BLINKING ===
 
 function doBlink() {
-    if (isSpeaking) return;
+    if (isSpeaking || usingVideo) return; // video has blinks baked in
     blinkEl.classList.add('blink');
     setTimeout(() => {
         blinkEl.classList.remove('blink');
@@ -385,7 +433,23 @@ setStatus(dotFace, valFace, 'gray', '--');
 setStatus(dotGateway, valGateway, 'gray', '--');
 setStatus(dotNet, valNet, 'gray', 'checking...');
 
-scheduleBlink();
+// Start with neutral video if available
+const initVid = document.getElementById('vid-neutral');
+if (initVid) {
+    initVid.play().then(() => {
+        initVid.classList.add('active');
+        usingVideo = true;
+    }).catch(() => {
+        // Video failed (autoplay blocked?), fall back to static PNG
+        document.getElementById('expr-neutral').classList.add('active');
+        usingVideo = false;
+        scheduleBlink();
+    });
+} else {
+    document.getElementById('expr-neutral').classList.add('active');
+    scheduleBlink();
+}
+
 connectWebSocket();
 checkNetwork();
 setInterval(checkNetwork, 30000);
