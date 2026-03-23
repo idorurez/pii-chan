@@ -17,6 +17,7 @@ class Expression(Enum):
     NEUTRAL = "neutral"
     HAPPY = "happy"
     THINKING = "thinking"
+    LISTENING = "listening"
     SURPRISED = "surprised"
     SLEEPY = "sleepy"
     TALKING = "talking"
@@ -130,7 +131,7 @@ class FaceController:
         
     def listening(self):
         """Show attentive expression (during voice input)."""
-        self.set_expression(Expression.SURPRISED, transition_ms=100)
+        self.set_expression(Expression.LISTENING, transition_ms=100)
         self.look_at(0.0, -0.1)  # look slightly toward user
         
     def react_happy(self):

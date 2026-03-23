@@ -30,54 +30,13 @@
             height: 100%;
         }
 
-        #avatar img {
-            object-fit: contain;
-        }
-
         #avatar video {
             object-fit: cover;
             opacity: 0;
             transition: opacity 0.25s ease-in-out;
         }
 
-        #avatar img.active, #avatar video.active {
-            opacity: 1;
-        }
-
-        /* Subtle idle breathing animation */
-        @keyframes breathe {
-            0%, 100% { transform: translateY(0px) scale(1); }
-            50% { transform: translateY(-3px) scale(1.003); }
-        }
-
-        #avatar.idle {
-            animation: breathe 4s ease-in-out infinite;
-        }
-
-        /* Talking bob — gentle sway */
-        @keyframes talkBob {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-2px); }
-        }
-
-        #avatar.talking {
-            animation: talkBob 0.8s ease-in-out infinite;
-        }
-
-        /* Blink overlay */
-        #blink-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            opacity: 0;
-            transition: opacity 0.08s ease-in-out;
-            z-index: 10;
-        }
-
-        #blink-overlay.blink {
+        #avatar video.active {
             opacity: 1;
         }
 
@@ -129,23 +88,12 @@
 </head>
 <body>
 
-<div id="avatar" class="idle">
-    <!-- Video animations (looping, preferred over static PNGs when available) -->
+<div id="avatar">
+    <!-- Video animations (all states are MP4 loops) -->
     <video id="vid-neutral" src="avatar/mira/animations/mira_neutral.mp4" loop muted playsinline preload="auto"></video>
     <video id="vid-thinking" src="avatar/mira/animations/mira_thinking_v04.mp4" loop muted playsinline preload="auto"></video>
-
-    <!-- Static PNG fallbacks for expressions without video -->
-    <img id="expr-neutral" src="avatar/mira/expressions/mira_neutral.png">
-    <img id="expr-happy" src="avatar/mira/expressions/mira_happy.png">
-    <img id="expr-sad" src="avatar/mira/expressions/mira_neutral.png">
-    <img id="expr-surprised" src="avatar/mira/expressions/mira_surprised.png">
-    <img id="expr-thinking" src="avatar/mira/expressions/mira_thinking.png">
-    <img id="expr-talking" src="avatar/mira/expressions/mira_talking.png">
-    <img id="expr-sleepy" src="avatar/mira/expressions/mira_sleepy.png">
-    <img id="expr-confused" src="avatar/mira/expressions/mira_confused.png">
-    <img id="expr-excited" src="avatar/mira/expressions/mira_happy.png">
-    <img id="expr-angry" src="avatar/mira/expressions/mira_confused.png">
-    <img id="blink-overlay" src="avatar/mira/expressions/mira_eyes_closed.png">
+    <video id="vid-listening" src="avatar/mira/animations/mira_listening_v02.mp4" loop muted playsinline preload="auto"></video>
+    <video id="vid-talking" src="avatar/mira/animations/mira_talking_v03.mp4" loop muted playsinline preload="auto"></video>
 </div>
 
 <div id="status-bar">
@@ -172,7 +120,6 @@
 
 <script>
 const avatarEl = document.getElementById('avatar');
-const blinkEl = document.getElementById('blink-overlay');
 
 // Status indicators
 const dotFace = document.getElementById('dot-face');
@@ -189,152 +136,86 @@ function setStatus(dot, val, color, text) {
 
 let currentExpression = 'neutral';
 let isSpeaking = false;
-let talkInterval = null;
-let blinkTimer = null;
-let usingVideo = false; // true when current expression has a video playing
+let expressionBeforeSpeaking = 'neutral';
 
-// Map of expressions that have video animations
+// All expressions map to video elements
 const VIDEO_MAP = {
     'neutral': 'vid-neutral',
     'thinking': 'vid-thinking',
+    'listening': 'vid-listening',
+    'talking': 'vid-talking',
+    // Map legacy expression names to available videos
+    'surprised': 'vid-listening',
+    'happy': 'vid-neutral',
+    'sad': 'vid-neutral',
+    'confused': 'vid-thinking',
+    'excited': 'vid-neutral',
+    'angry': 'vid-neutral',
+    'sleepy': 'vid-neutral',
 };
+
+// === VIDEO PLAYBACK ===
+
+function playVideo(vidEl) {
+    function tryPlay() {
+        vidEl.play().then(() => {
+            console.log('Video playing:', vidEl.id);
+        }).catch((e) => {
+            console.warn('Video play retry for', vidEl.id, e.message);
+            setTimeout(tryPlay, 500);
+        });
+    }
+
+    if (vidEl.readyState >= 2) {
+        tryPlay();
+    } else {
+        vidEl.addEventListener('canplay', tryPlay, { once: true });
+        setTimeout(tryPlay, 1000);
+    }
+}
 
 // === EXPRESSION SWITCHING ===
 
 function setExpression(name) {
     if (name === currentExpression) return;
 
-    // Deactivate current expression (video or image)
-    const curVid = VIDEO_MAP[currentExpression] ? document.getElementById(VIDEO_MAP[currentExpression]) : null;
-    const curImg = document.getElementById('expr-' + currentExpression);
-    if (curVid && usingVideo) {
+    // Deactivate current video
+    const curVidId = VIDEO_MAP[currentExpression];
+    if (curVidId) {
+        const curVid = document.getElementById(curVidId);
         curVid.classList.remove('active');
         curVid.pause();
     }
-    if (curImg) curImg.classList.remove('active');
 
-    // Activate new expression — prefer video if available
-    const newVid = VIDEO_MAP[name] ? document.getElementById(VIDEO_MAP[name]) : null;
-    if (newVid) {
-        newVid.currentTime = 0;
-        // Show video element immediately, start playback
-        newVid.classList.add('active');
-        usingVideo = true;
-        avatarEl.classList.remove('idle');
-        stopBlink();
-
-        function tryPlay() {
-            newVid.play().then(() => {
-                console.log('Video playing:', name);
-            }).catch((e) => {
-                console.warn('Video play retry for', name, e.message);
-                setTimeout(tryPlay, 500);
-            });
-        }
-
-        if (newVid.readyState >= 2) {
-            tryPlay();
-        } else {
-            newVid.addEventListener('canplay', tryPlay, { once: true });
-            setTimeout(tryPlay, 1000);
-        }
-    } else {
-        const newImg = document.getElementById('expr-' + name);
-        if (!newImg) {
-            console.warn('Unknown expression:', name);
-            return;
-        }
-        newImg.classList.add('active');
-        usingVideo = false;
-        // Static PNG — re-enable breathing + blinking
-        if (!isSpeaking) {
-            avatarEl.classList.add('idle');
-            scheduleBlink();
-        }
+    // Activate new video
+    const newVidId = VIDEO_MAP[name];
+    if (!newVidId) {
+        console.warn('Unknown expression:', name);
+        return;
     }
 
+    const newVid = document.getElementById(newVidId);
+    newVid.currentTime = 0;
+    newVid.classList.add('active');
+    playVideo(newVid);
+
     currentExpression = name;
-    console.log('Expression:', name, usingVideo ? '(video)' : '(png)');
+    console.log('Expression:', name);
 }
 
-// === SPEAKING ANIMATION ===
-// Alternate between talking mouth and current expression
+// === SPEAKING ===
 
 function startSpeaking() {
     if (isSpeaking) return;
     isSpeaking = true;
-    avatarEl.classList.remove('idle');
-    avatarEl.classList.add('talking');
-    stopBlink();
-
-    // Pause any active video during speaking
-    const curVid = VIDEO_MAP[currentExpression] ? document.getElementById(VIDEO_MAP[currentExpression]) : null;
-    if (curVid && usingVideo) {
-        curVid.classList.remove('active');
-        curVid.pause();
-    }
-
-    // Show talking image on top with opacity fading for smooth mouth movement
-    const talkImg = document.getElementById('expr-talking');
-    talkImg.style.transition = 'opacity 0.2s ease-in-out';
-    talkImg.style.opacity = '1';
-    talkImg.classList.add('active');
-
-    let mouthOpen = true;
-    talkInterval = setInterval(() => {
-        if (!isSpeaking) return;
-        mouthOpen = !mouthOpen;
-        talkImg.style.opacity = mouthOpen ? '1' : '0.3';
-    }, 300 + Math.random() * 200);
+    expressionBeforeSpeaking = currentExpression;
+    setExpression('talking');
 }
 
 function stopSpeaking() {
     if (!isSpeaking) return;
     isSpeaking = false;
-    avatarEl.classList.remove('talking');
-    avatarEl.classList.add('idle');
-
-    if (talkInterval) {
-        clearInterval(talkInterval);
-        talkInterval = null;
-    }
-
-    // Hide talking frame
-    const talkImg = document.getElementById('expr-talking');
-    talkImg.style.opacity = '0';
-    talkImg.classList.remove('active');
-
-    // Restore current expression — video or image
-    const curVid = VIDEO_MAP[currentExpression] ? document.getElementById(VIDEO_MAP[currentExpression]) : null;
-    if (curVid && usingVideo) {
-        curVid.play().catch(() => {});
-        curVid.classList.add('active');
-    } else {
-        document.getElementById('expr-' + currentExpression)?.classList.add('active');
-        scheduleBlink();
-    }
-}
-
-// === BLINKING ===
-
-function doBlink() {
-    if (isSpeaking || usingVideo) return; // video has blinks baked in
-    blinkEl.classList.add('blink');
-    setTimeout(() => {
-        blinkEl.classList.remove('blink');
-        scheduleBlink();
-    }, 120 + Math.random() * 80);
-}
-
-function scheduleBlink() {
-    if (blinkTimer) clearTimeout(blinkTimer);
-    // Blink every 3-6 seconds
-    blinkTimer = setTimeout(doBlink, 3000 + Math.random() * 3000);
-}
-
-function stopBlink() {
-    if (blinkTimer) clearTimeout(blinkTimer);
-    blinkEl.classList.remove('blink');
+    setExpression(expressionBeforeSpeaking);
 }
 
 // === FACE WEBSOCKET ===
@@ -424,8 +305,8 @@ function applyState(state) {
         }
     }
 
-    // Apply expression (but not 'talking' — that's handled by speaking animation)
-    if (state.expression && state.expression !== 'talking') {
+    // Apply expression (but not 'talking' — that's handled by speaking)
+    if (state.expression && state.expression !== 'talking' && !isSpeaking) {
         setExpression(state.expression);
     }
 }
@@ -435,15 +316,10 @@ function applyState(state) {
 document.addEventListener('keydown', (e) => {
     switch(e.key) {
         case '1': setExpression('neutral'); break;
-        case '2': setExpression('happy'); break;
-        case '3': setExpression('sad'); break;
-        case '4': setExpression('surprised'); break;
-        case '5': setExpression('thinking'); break;
-        case '6': setExpression('confused'); break;
-        case '7': setExpression('excited'); break;
-        case '8': setExpression('sleepy'); break;
+        case '2': setExpression('thinking'); break;
+        case '3': setExpression('listening'); break;
+        case '4': setExpression('talking'); break;
         case 's': isSpeaking ? stopSpeaking() : startSpeaking(); break;
-        case 'b': doBlink(); break;
     }
 });
 
@@ -453,39 +329,10 @@ setStatus(dotFace, valFace, 'gray', '--');
 setStatus(dotGateway, valGateway, 'gray', '--');
 setStatus(dotNet, valNet, 'gray', 'checking...');
 
-// Start with neutral video if available
+// Start with neutral video
 const initVid = document.getElementById('vid-neutral');
-if (initVid) {
-    // Show PNG immediately as a backdrop while video loads
-    document.getElementById('expr-neutral').classList.add('active');
-    scheduleBlink();
-
-    function tryPlayInit() {
-        initVid.play().then(() => {
-            // Video is playing — swap from PNG to video
-            document.getElementById('expr-neutral').classList.remove('active');
-            initVid.classList.add('active');
-            usingVideo = true;
-            avatarEl.classList.remove('idle');
-            stopBlink();
-            console.log('Initial video playing');
-        }).catch((e) => {
-            console.warn('Video play failed, retrying in 1s:', e.message);
-            setTimeout(tryPlayInit, 1000);
-        });
-    }
-
-    if (initVid.readyState >= 2) {
-        tryPlayInit();
-    } else {
-        initVid.addEventListener('canplay', tryPlayInit, { once: true });
-        // Fallback if canplay never fires
-        setTimeout(tryPlayInit, 2000);
-    }
-} else {
-    document.getElementById('expr-neutral').classList.add('active');
-    scheduleBlink();
-}
+initVid.classList.add('active');
+playVideo(initVid);
 
 connectWebSocket();
 checkNetwork();
