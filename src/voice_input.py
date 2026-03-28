@@ -167,7 +167,7 @@ class VoiceInput:
         # Load wake word model
         if self.wake_word_model_path and Path(self.wake_word_model_path).exists():
             # Custom trained model
-            oww = OWWModel(wakeword_models=[self.wake_word_model_path])
+            oww = OWWModel(wakeword_model_paths=[self.wake_word_model_path])
             available_words = list(oww.models.keys())
             print(f"  Custom wake word model: {self.wake_word_model_path}")
             target_ww = available_words[0] if available_words else self.wake_word

@@ -393,7 +393,7 @@ def run_text_mode(args, config):
     brain.start_session()
     can.start()
 
-    voice.speak("Beep! ミラ online. Ready when you are!")
+    voice.speak("ミラ、オンライン!")
 
     # Start background think loop
     thinker = threading.Thread(
@@ -517,7 +517,7 @@ def run_text_mode(args, config):
         can.stop()
         if gateway:
             gateway.stop()
-        voice.speak("See you next time!")
+        voice.speak("またね!")
         print("Goodbye!")
 
 
@@ -560,7 +560,7 @@ def run_voice_mode(args, config):
 
     print()
     face.set_expression(Expression.HAPPY)
-    voice.speak("ミラ online. Say the wake word when you need me!", blocking=True)
+    voice.speak("ミラ、オンライン!", blocking=True)
     face.set_expression(Expression.NEUTRAL)
 
     _state = {"post_tts": False}
@@ -572,7 +572,7 @@ def run_voice_mode(args, config):
             return
         print("  [wake]")
         face.listening()
-        voice.chime(ascending=True)
+        voice.speak("はい!", blocking=True)
 
     def on_speech(text):
         """Called when speech is transcribed after wake word."""
@@ -627,7 +627,7 @@ def run_voice_mode(args, config):
         # Suppress false wakes for a bit after unmuting
         time.sleep(2.0)
         _state["post_tts"] = False
-        voice.chime(ascending=False)  # "done" chime — ready for next command
+        # No chime — just return to neutral silently
         face.set_expression(Expression.NEUTRAL)
 
         if brain.current_session:
@@ -664,7 +664,7 @@ def run_voice_mode(args, config):
         can.stop()
         if gateway:
             gateway.stop()
-        voice.speak("See you next time!", blocking=True)
+        voice.speak("またね!", blocking=True)
         face.stop()
         print("Goodbye!")
 

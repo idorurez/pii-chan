@@ -80,8 +80,9 @@ Mira's defensible advantages:
 - Can be toggled visible/hidden based on mood
 
 **3. Voice Interaction**
-- Wake word activation ("Hey Mira" or configurable)
-- Natural conversation via Claude
+- Custom wake word "miraku" (trained OpenWakeWord ONNX model)
+- Natural conversation via Claude in English (Kokoro TTS)
+- Japanese confirmations: "はい!" (wake), "ミラ、オンライン!" (boot), "またね!" (shutdown)
 - Variable voice (can tune TTS voice/style)
 - Can be muted when desired
 
@@ -213,9 +214,10 @@ All voice processing runs locally on the Pi — no API keys required:
 
 | Component | Solution | License | Notes |
 |-----------|----------|---------|-------|
-| Wake Word | OpenWakeWord | Apache 2.0 | Truly offline, no key |
-| Speech-to-Text | Vosk | Apache 2.0 | Offline, good accuracy |
-| Text-to-Speech | Piper | MIT | Fast, multiple voices |
+| Wake Word | OpenWakeWord | Apache 2.0 | Custom "miraku" ONNX model, threshold 0.5 |
+| Speech-to-Text | Vosk | Apache 2.0 | Offline, `vosk-model-en-us-0.22-lgraph` |
+| TTS (English) | Kokoro ONNX | Apache 2.0 | Voice `af_bella`, expressive and natural |
+| TTS (Japanese) | VOICEVOX Core | LGPL | Speaker 14 (冥鳴ひまり), for confirmations |
 
 **Why not Porcupine/Picovoice?** Requires internet to validate AccessKey, even though processing is local. Unacceptable for a car product.
 
@@ -384,9 +386,11 @@ I can still help with car controls — want me to adjust the climate?"
 
 | Question | Decision | Rationale |
 |----------|----------|-----------|
-| Wake word | **OpenWakeWord** | Truly offline, no API key, Apache 2.0 |
+| Wake word | **OpenWakeWord** | Truly offline, no API key, Apache 2.0. Custom "miraku" model trained. |
 | STT | **Vosk** | Offline, good accuracy, no key |
-| TTS | **Piper** | Fast, local, MIT license |
+| TTS (English) | **Kokoro ONNX** | Expressive, offline, voice `af_bella` |
+| TTS (Japanese) | **VOICEVOX Core** | Offline, speaker 14 (冥鳴ひまり) |
+| Face display | **HTML/MP4 via FaceServer** | WebSocket state sync, MP4 animation loops, served on port 8080 |
 | Gateway location | **AWS instance** | Already exists, Claude API access |
 | Fallback | **Local LLM (Qwen/Phi)** | Works offline for car controls |
 
@@ -575,4 +579,13 @@ For quick purchase tonight:
 
 ---
 
-*Last updated: 2026-03-10*
+---
+
+## TODO
+
+- [x] ~~**Disable WiFi power management permanently**~~ — Fixed via `/etc/NetworkManager/conf.d/wifi-powersave-off.conf` with `wifi.powersave = 2`. Also switched to 2.4GHz SSID for better stability.
+- [ ] **ReSpeaker USB mic array** — On order, replacing current noisy USB mic for better wake word detection and noise cancellation.
+
+---
+
+*Last updated: 2026-03-28*
