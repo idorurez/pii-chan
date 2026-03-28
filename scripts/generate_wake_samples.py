@@ -38,37 +38,42 @@ EXTRA_VOICE_FILES = [
     "bf_alice", "bf_lily", "bm_daniel", "bm_fable",
 ]
 
-# Positive samples — Japanese + romanized variations of "miraku"
+# Positive samples — romaji with Japanese voices (ONNX Kokoro can't read katakana)
 POSITIVE_PHRASES_JP = [
-    # Native Japanese
-    "ミラク",
-    "ミラク、",
-    "ミラク、聞いて",
-    "ミラク、教えて",
-    "ミラク、おはよう",
-    "ねえミラク",
-    "ミラクちゃん",
+    # Isolated wake word
+    "miraku",
+    "miraku.",
+    # With context (romaji)
+    "miraku, kiite",
+    "miraku, oshiete",
+    "miraku, ohayou",
+    "miraku, oyasumi",
+    "miraku, onegai",
+    "miraku, chotto",
+    "miraku, genki?",
+    "miraku, nani?",
+    "nee miraku",
+    "nee, miraku",
+    "oi miraku",
+    "miraku chan",
+    "miraku san",
+    "miraku, doko?",
+    "miraku, matte",
+    "miraku, tasukete",
+    "miraku, ii?",
+    "miraku, dame",
 ]
 
-POSITIVE_PHRASES_EN = [
-    # Romanized for English voices
-    "miraku",
-    "meeraku",
-    "mee rah koo",
-    "mee ra koo",
-    "hey miraku",
-    "ok miraku",
-    "yo miraku",
-    "miraku listen",
-    "miraku hey",
-]
+# No English romanized phrases — English voices mangle the pronunciation
+POSITIVE_PHRASES_EN = []
 
 # Negative samples: similar-sounding words that should NOT trigger
 NEGATIVE_PHRASES_JP = [
-    "ありがとう", "おはよう", "すみません",
-    "そうですね", "なるほど", "大丈夫",
-    "ミラー", "みらい", "奇跡",
-    "聞いて", "教えて", "お願い",
+    "arigatou", "ohayou", "sumimasen",
+    "soudesune", "naruhodo", "daijoubu",
+    "miraa", "mirai", "kiseki",
+    "kiite", "oshiete", "onegai",
+    "mikaku", "midori", "minato",
 ]
 
 NEGATIVE_PHRASES_EN = [
@@ -142,20 +147,21 @@ def generate_samples(output_dir: str, count: int, negative: bool = False):
         phrase_voice_pairs = []
         for phrase in NEGATIVE_PHRASES_JP:
             for name, voice in jp_voices:
-                phrase_voice_pairs.append((phrase, name, voice))
+                phrase_voice_pairs.append((phrase, name, voice, 'ja'))
         for phrase in NEGATIVE_PHRASES_EN:
             for name, voice in en_voices:
-                phrase_voice_pairs.append((phrase, name, voice))
+                phrase_voice_pairs.append((phrase, name, voice, 'en-us'))
         label = "negative"
     else:
-        # For positives, pair JP phrases with JP voices, EN with EN
+        # For positives, JP phrases with JP voices only
         phrase_voice_pairs = []
         for phrase in POSITIVE_PHRASES_JP:
             for name, voice in jp_voices:
-                phrase_voice_pairs.append((phrase, name, voice))
-        for phrase in POSITIVE_PHRASES_EN:
-            for name, voice in en_voices:
-                phrase_voice_pairs.append((phrase, name, voice))
+                phrase_voice_pairs.append((phrase, name, voice, 'ja'))
+        if POSITIVE_PHRASES_EN:
+            for phrase in POSITIVE_PHRASES_EN:
+                for name, voice in en_voices:
+                    phrase_voice_pairs.append((phrase, name, voice, 'en-us'))
         label = "positive"
 
     print(f"  {len(phrase_voice_pairs)} phrase/voice combos available")
@@ -166,11 +172,11 @@ def generate_samples(output_dir: str, count: int, negative: bool = False):
     while generated < count:
         pair_idx = generated % len(phrase_voice_pairs)
         speed_idx = generated % len(SPEEDS)
-        phrase, voice_name, voice_param = phrase_voice_pairs[pair_idx]
+        phrase, voice_name, voice_param, lang = phrase_voice_pairs[pair_idx]
         speed = SPEEDS[speed_idx]
 
         try:
-            samples, sr = kokoro.create(phrase, voice=voice_param, speed=speed)
+            samples, sr = kokoro.create(phrase, voice=voice_param, speed=speed, lang=lang)
 
             # Convert to 16kHz mono (openWakeWord format)
             if sr != 16000:
