@@ -262,7 +262,7 @@ class Voice:
 
                 if first and on_start:
                     on_start()
-                    first = True
+                    first = False
 
                 engine = self.engine
                 if engine == "auto":
