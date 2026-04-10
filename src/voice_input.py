@@ -81,6 +81,7 @@ class VoiceInput:
         self.on_speech = on_speech
         self.on_wake = on_wake
         self.on_speech_fail = None  # Called when recording fails (silence, too short)
+        self.on_recording_done = None  # Called immediately after recording ends (before STT)
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -246,7 +247,11 @@ class VoiceInput:
                     self._recording = False
 
                     if audio is not None and len(audio) > 0:
+                        if self.on_recording_done:
+                            self.on_recording_done()
+                        t_stt = time.time()
                         text = self._stt.transcribe(audio)
+                        print(f"  (STT: {time.time()-t_stt:.1f}s)")
                         if text and len(text.split()) >= 2 and self.on_speech:
                             self.on_speech(text)
                         else:
@@ -265,6 +270,7 @@ class VoiceInput:
         print("  Listening...")
         chunks = []
         silence_start = None
+        speech_started = False
         start_time = time.time()
 
         while self._running:
@@ -281,16 +287,25 @@ class VoiceInput:
             audio_int16 = self._resample_16k(chunk, native_rate)
             chunks.append(audio_int16)
 
-            # Check RMS for silence detection (on original float audio)
             rms = np.sqrt(np.mean(chunk ** 2))
-            if rms < self.silence_threshold:
-                if silence_start is None:
-                    silence_start = time.time()
-                elif time.time() - silence_start >= self.silence_duration:
-                    print(f"  (silence detected after {elapsed:.1f}s)")
+
+            if not speech_started:
+                # Wait for user to start talking (up to 3s)
+                if rms >= self.silence_threshold:
+                    speech_started = True
+                elif elapsed >= 3.0:
+                    print(f"  (no speech detected after {elapsed:.1f}s)")
                     break
             else:
-                silence_start = None
+                # Speech has started — detect end-of-speech silence
+                if rms < self.silence_threshold:
+                    if silence_start is None:
+                        silence_start = time.time()
+                    elif time.time() - silence_start >= self.silence_duration:
+                        print(f"  (silence detected after {elapsed:.1f}s)")
+                        break
+                else:
+                    silence_start = None
 
         if not chunks:
             return None

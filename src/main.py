@@ -637,10 +637,15 @@ def run_voice_mode(args, config):
         """Called when wake triggered but no usable speech captured."""
         face.set_expression(Expression.NEUTRAL)
 
+    def on_recording_done():
+        """Called immediately when recording ends, before STT."""
+        face.thinking()
+
     # Wire up callbacks and start listening
     voice_input.on_wake = on_wake
     voice_input.on_speech = on_speech
     voice_input.on_speech_fail = on_speech_fail
+    voice_input.on_recording_done = on_recording_done
     voice_input.start()
 
     # Start background think loop (CAN events, idle chatter)
