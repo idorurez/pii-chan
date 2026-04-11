@@ -40,6 +40,10 @@
             opacity: 1;
         }
 
+        #avatar.booting video.active {
+            opacity: 0;
+        }
+
         #status-bar {
             position: fixed;
             top: 0;
@@ -84,6 +88,36 @@
 
         .status-label { color: #aaa; }
         .status-value { color: #fff; }
+
+        #subtitle {
+            position: fixed;
+            bottom: 40px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 18px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-height: 40vh;
+            overflow-y: auto;
+            line-height: 1.4;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        #subtitle.visible {
+            opacity: 1;
+        }
+        #subtitle .user-text {
+            color: #8cf;
+            margin-bottom: 6px;
+        }
+        #subtitle .mira-text {
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +129,8 @@
     <video id="vid-listening" src="avatar/mira/animations/mira_listening_v02.mp4" loop muted playsinline preload="auto"></video>
     <video id="vid-talking" src="avatar/mira/animations/mira_talking_v03.mp4" loop muted playsinline preload="auto"></video>
 </div>
+
+<div id="subtitle"></div>
 
 <div id="status-bar">
     <div class="status-group">
@@ -295,7 +331,19 @@ function formatAgo(epochSec) {
     return Math.floor(diff / 86400) + 'd ago';
 }
 
+const subtitleEl = document.getElementById('subtitle');
+let subtitleClearTimer = null;
+
 function applyState(state) {
+    // Handle booting state — hide avatar until ready
+    if (state.booting !== undefined) {
+        if (state.booting) {
+            avatarEl.classList.add('booting');
+        } else {
+            avatarEl.classList.remove('booting');
+        }
+    }
+
     // Handle speaking state changes first
     if (state.isSpeaking !== undefined) {
         if (state.isSpeaking && !isSpeaking) {
@@ -308,6 +356,21 @@ function applyState(state) {
     // Apply expression (but not 'talking' — that's handled by speaking)
     if (state.expression && state.expression !== 'talking' && !isSpeaking) {
         setExpression(state.expression);
+    }
+
+    // Subtitle
+    if (state.subtitle !== undefined) {
+        if (state.subtitle) {
+            subtitleEl.innerHTML = state.subtitle;
+            subtitleEl.classList.add('visible');
+            // Auto-hide after 8s of no updates
+            if (subtitleClearTimer) clearTimeout(subtitleClearTimer);
+            subtitleClearTimer = setTimeout(() => {
+                subtitleEl.classList.remove('visible');
+            }, 8000);
+        } else {
+            subtitleEl.classList.remove('visible');
+        }
     }
 }
 

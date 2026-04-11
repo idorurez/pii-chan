@@ -41,6 +41,7 @@ class FaceState:
     """Current state of the face display."""
     expression: Expression = Expression.NEUTRAL
     idle_animation: IdleAnimation = IdleAnimation.BREATHE
+    booting: bool = True  # True until Mira has finished startup
     is_speaking: bool = False
     mouth_open: float = 0.0  # 0.0-1.0 for lip sync
     eye_target_x: float = 0.0  # -1.0 to 1.0, for eye tracking
@@ -48,11 +49,13 @@ class FaceState:
     transition_duration_ms: int = 200  # smooth transition time
     gateway_connected: bool = False  # OpenClaw gateway connection status
     gateway_last_connected: float = 0  # epoch timestamp of last successful connection
+    subtitle: str = ""  # Text to display on screen (response text, debug info)
 
     def to_dict(self) -> dict:
         return {
             "expression": self.expression.value,
             "idleAnimation": self.idle_animation.value,
+            "booting": self.booting,
             "isSpeaking": self.is_speaking,
             "mouthOpen": self.mouth_open,
             "eyeTargetX": self.eye_target_x,
@@ -60,6 +63,7 @@ class FaceState:
             "transitionDurationMs": self.transition_duration_ms,
             "gatewayConnected": self.gateway_connected,
             "gatewayLastConnected": self.gateway_last_connected,
+            "subtitle": self.subtitle,
             "timestamp": int(time.time() * 1000),
         }
     
@@ -124,6 +128,16 @@ class FaceController:
     
     # Convenience methods for common state transitions
     
+    def set_subtitle(self, text: str):
+        """Set subtitle text on display."""
+        self.state.subtitle = text
+        self._notify()
+
+    def clear_subtitle(self):
+        """Clear subtitle text."""
+        self.state.subtitle = ""
+        self._notify()
+
     def thinking(self):
         """Show thinking expression (when waiting for LLM)."""
         self.set_expression(Expression.THINKING)

@@ -16,11 +16,13 @@ class LLMConfig:
     
 @dataclass
 class VoiceOutputConfig:
-    engine: str = "auto"  # "auto", "kokoro", "piper", "voicevox", or "mock"
+    engine: str = "auto"  # "auto", "kokoro", "piper", "edge", "voicevox", or "mock"
     # Kokoro settings (English)
     kokoro_voice: str = "af_jessica"  # Kokoro voice name
     # Piper settings (English)
     piper_model: str = "./models/piper/en_US-lessac-medium.onnx"
+    # Edge TTS settings (English, cloud)
+    edge_voice: str = "en-US-AnaNeural"  # Microsoft neural voice
     # VOICEVOX settings (Japanese)
     speaker_id: int = 3  # ずんだもん ノーマル
     speed: float = 1.0

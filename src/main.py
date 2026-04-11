@@ -71,6 +71,7 @@ def init_components(args, config):
             output_device=config.audio.output_device,
             kokoro_voice=config.voice.kokoro_voice,
             piper_model=config.voice.piper_model,
+            edge_voice=config.voice.edge_voice,
             speaker_id=config.voice.speaker_id,
             speed=config.voice.speed,
             volume=config.voice.volume,
@@ -558,9 +559,13 @@ def run_voice_mode(args, config):
     brain.start_session()
     can.start()
 
+    # Pre-load TTS engines to avoid cold-start latency on first response
+    voice.warmup()
+
     print()
     face.set_expression(Expression.HAPPY)
     voice.speak("ミラ、オンライン!", blocking=True)
+    face.controller.state.booting = False
     face.set_expression(Expression.NEUTRAL)
 
     _state = {"post_tts": False}
@@ -572,11 +577,12 @@ def run_voice_mode(args, config):
             return
         print("  [wake]")
         face.listening()
-        voice.speak("はい!", blocking=True)
+        voice.speak("はい!", blocking=False)
 
     def on_speech(text):
         """Called when speech is transcribed after wake word."""
         print(f"  You: \"{text}\"")
+        face.controller.set_subtitle(f'🎤 {text}')
         face.thinking()
         voice_input.muted = True
         t0 = time.time()
@@ -585,10 +591,13 @@ def run_voice_mode(args, config):
             # Streamed: TTS starts on first complete sentence while Claude keeps generating
             sq = queue.Queue()
             _timing = {"first_token": None, "first_sentence": None, "tts_start": None}
+            _response_chunks = []
 
             def on_delta(d):
                 if _timing["first_token"] is None:
                     _timing["first_token"] = time.time()
+                _response_chunks.append(d)
+                face.controller.set_subtitle("".join(_response_chunks))
 
             def tts_worker():
                 voice.speak_streamed(
@@ -613,6 +622,7 @@ def run_voice_mode(args, config):
         else:
             response = "Sorry, I couldn't reach the gateway. Try again."
             print(f"  ミラ: \"{response}\"")
+            face.controller.set_subtitle(response)
             face.start_speaking()
             voice.speak(response, blocking=True)
             face.stop_speaking()
@@ -629,6 +639,7 @@ def run_voice_mode(args, config):
         _state["post_tts"] = False
         # No chime — just return to neutral silently
         face.set_expression(Expression.NEUTRAL)
+        face.controller.clear_subtitle()
 
         if brain.current_session:
             memory.log_speech(response, brain.current_session.session_id)

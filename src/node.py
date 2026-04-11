@@ -167,7 +167,10 @@ class OpenClawNode:
         url = f"{scheme}://{self._gateway_host}:{self._gateway_port}"
         print(f"[node] Connecting to {url}...")
 
-        self._ws = await websockets.connect(url, max_size=25 * 1024 * 1024)
+        self._ws = await websockets.connect(
+            url, max_size=25 * 1024 * 1024,
+            ping_interval=20, ping_timeout=10,
+        )
 
         # Wait for challenge
         raw = await asyncio.wait_for(self._ws.recv(), timeout=10)

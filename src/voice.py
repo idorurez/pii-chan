@@ -4,8 +4,9 @@ Voice Output - TTS with auto language detection
 Engines:
 - "kokoro": Kokoro-82M TTS (expressive, offline, English)
 - "piper": Piper TTS (fast, offline, English)
+- "edge": Edge TTS (cloud, Microsoft neural voices, expressive English)
 - "voicevox": VOICEVOX Core (Japanese, local)
-- "auto": Auto-detect language per utterance — Japanese text → VOICEVOX, English → Kokoro
+- "auto": Auto-detect language per utterance — Japanese text → VOICEVOX, English → Edge/Piper/Kokoro
 - "mock": Print only, no audio
 """
 import io
@@ -41,6 +42,13 @@ try:
     PIPER_AVAILABLE = True
 except ImportError:
     PIPER_AVAILABLE = False
+
+try:
+    import edge_tts
+    import asyncio as _edge_asyncio
+    EDGE_TTS_AVAILABLE = True
+except ImportError:
+    EDGE_TTS_AVAILABLE = False
 
 # Japanese/CJK detection
 _CJK_RE = re.compile(r'[\u3000-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]')
@@ -143,11 +151,13 @@ class Voice:
     def __init__(self, engine: str = "mock", output_device: Optional[int] = None,
                  kokoro_voice: str = "af_jessica",
                  piper_model: Optional[str] = None,
+                 edge_voice: str = "en-US-AnaNeural",
                  speaker_id: int = 3, speed: float = 1.0,
                  volume: float = 0.3):
         self.engine = engine
         self.kokoro_voice = kokoro_voice
         self.piper_model_path = piper_model or self._PIPER_MODEL
+        self.edge_voice = edge_voice
         self.speaker_id = speaker_id
         self.speed = speed
         self.volume = volume
@@ -177,11 +187,13 @@ class Voice:
         if self.engine == "mock":
             return True
         if self.engine == "auto":
-            return self._check_kokoro() or self._check_voicevox()
+            return self._check_edge() or self._check_piper() or self._check_kokoro() or self._check_voicevox()
         if self.engine == "kokoro":
             return self._check_kokoro()
         if self.engine == "piper":
             return self._check_piper()
+        if self.engine == "edge":
+            return self._check_edge()
         if self.engine == "voicevox":
             return self._check_voicevox()
         return False
@@ -202,6 +214,9 @@ class Voice:
                 and Path(self.piper_model_path).exists()
             )
         return self._piper_ok
+
+    def _check_edge(self) -> bool:
+        return EDGE_TTS_AVAILABLE and AUDIO_AVAILABLE
 
     def _check_voicevox(self) -> bool:
         if self._voicevox_ok is None:
@@ -272,6 +287,8 @@ class Voice:
                     self._kokoro_speak(sentence)
                 elif engine == "piper":
                     self._piper_speak(sentence)
+                elif engine == "edge":
+                    self._edge_speak(sentence)
                 elif engine == "voicevox":
                     self._voicevox_speak(sentence)
         except Exception as e:
@@ -287,6 +304,11 @@ class Voice:
             if self._check_voicevox():
                 return "voicevox"
             return "kokoro"
+        # Prefer Edge TTS for English (expressive, cloud)
+        if self._check_edge():
+            return "edge"
+        if self._check_piper():
+            return "piper"
         return "kokoro"
 
     def _speak_sync(self, text: str) -> bool:
@@ -303,6 +325,8 @@ class Voice:
                 return self._kokoro_speak(text)
             elif engine == "piper":
                 return self._piper_speak(text)
+            elif engine == "edge":
+                return self._edge_speak(text)
             elif engine == "voicevox":
                 return self._voicevox_speak(text)
             else:
@@ -315,6 +339,15 @@ class Voice:
             self._speaking = False
 
     # ---- Kokoro TTS (English) ----
+
+    def warmup(self):
+        """Pre-load TTS engines to avoid cold-start latency."""
+        if self._check_piper():
+            self._init_piper()
+        if self._check_kokoro():
+            self._init_kokoro()
+        if self._check_voicevox():
+            self._init_voicevox()
 
     def _init_kokoro(self) -> "Kokoro":
         """Lazy-init Kokoro synthesizer on first use."""
@@ -357,18 +390,74 @@ class Voice:
             return False
 
         voice = self._init_piper()
-        buf = io.BytesIO()
-        with wave.open(buf, 'wb') as wf:
-            voice.synthesize(text, wf, length_scale=1.0 / self.speed)
-        buf.seek(0)
-        with wave.open(buf, 'rb') as wav:
-            sr = wav.getframerate()
-            audio = wav.readframes(wav.getnframes())
-            arr = np.frombuffer(audio, dtype=np.int16).astype(np.float32) / 32768.0
-        arr = arr * self.volume
-        sd.play(arr, sr, device=self.output_device)
+        chunks = list(voice.synthesize(text))
+        if not chunks:
+            return False
+        audio = np.concatenate([c.audio_float_array for c in chunks])
+        sr = chunks[0].sample_rate
+        audio = (audio * self.volume).astype(np.float32)
+        sd.play(audio, sr, device=self.output_device)
         sd.wait()
         return True
+
+    # ---- Edge TTS (English, cloud via Microsoft) ----
+
+    def _edge_speak(self, text: str) -> bool:
+        text = _prep_for_kokoro(text)  # same cleanup — strip CJK, sub ミラ→Mira
+        if not text:
+            return True
+        if not EDGE_TTS_AVAILABLE or not AUDIO_AVAILABLE:
+            print(f"[ミラ] {text}")
+            return False
+
+        try:
+            # edge-tts is async, run in a temporary event loop
+            loop = _edge_asyncio.new_event_loop()
+            try:
+                audio_data = loop.run_until_complete(self._edge_synthesize(text))
+            finally:
+                loop.close()
+
+            if audio_data is None or len(audio_data) == 0:
+                print(f"[voice] Edge TTS returned no audio")
+                return False
+
+            # Edge TTS returns MP3 — decode to PCM
+            arr, sr = self._decode_mp3(audio_data)
+            arr = arr * self.volume
+            sd.play(arr, sr, device=self.output_device)
+            sd.wait()
+            return True
+        except Exception as e:
+            print(f"[voice] Edge TTS error: {e}")
+            # Fallback to Piper
+            if self._check_piper():
+                return self._piper_speak(text)
+            return False
+
+    async def _edge_synthesize(self, text: str) -> bytes:
+        """Synthesize text using Edge TTS. Returns MP3 bytes."""
+        communicate = edge_tts.Communicate(text, self.edge_voice)
+        audio_chunks = []
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_chunks.append(chunk["data"])
+        return b"".join(audio_chunks)
+
+    @staticmethod
+    def _decode_mp3(mp3_data: bytes):
+        """Decode MP3 bytes to float32 numpy array + sample rate."""
+        import subprocess
+        # Use ffmpeg to convert MP3 → raw PCM (16-bit, 24kHz, mono)
+        proc = subprocess.run(
+            ["ffmpeg", "-i", "pipe:0", "-f", "s16le", "-acodec", "pcm_s16le",
+             "-ar", "24000", "-ac", "1", "pipe:1"],
+            input=mp3_data, capture_output=True,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed: {proc.stderr[:200]}")
+        arr = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+        return arr, 24000
 
     # ---- VOICEVOX TTS (Japanese, local Core) ----
 
